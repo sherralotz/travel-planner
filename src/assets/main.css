@@ -1,0 +1,28 @@
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:ital,wght@0,300..800;1,300..800&family=Red+Hat+Text:ital,wght@0,300..700;1,300..700&family=Slabo+13px&display=swap');
+@import "tailwindcss";  
+@import './base.css';
+
+
+body {  
+  font-family: "Open Sans 13px", sans-serif;  
+}
+
+#app {
+  max-width: 900px;
+  margin: 0 auto; 
+  font-weight: normal;
+}
+ 
+ 
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    place-items: center;
+  }
+
+  #app { 
+    padding: 0 1rem;
+    width: 100%;
+  }
+}
