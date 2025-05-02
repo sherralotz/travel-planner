@@ -1,7 +1,4 @@
-<script setup>
-// import Home from './components/Home.vue'   
-import Checklist from './components/variants/Checklist.vue';
-import Notes from './components/variants/Notes.vue';
+<script setup> 
 import Tabs from './components/Tabs.vue' 
 </script>
 
@@ -9,7 +6,7 @@ import Tabs from './components/Tabs.vue'
   <main>
     <div class="h-dvh bg-gray-50 p-4"> 
       <div class="">
-        <h1 class="text-2xl font-bold mb-4">Travel Planner: Hello World</h1>
+        <h1 class="text-2xl font-bold mb-4">Travel Planner:</h1>
         <div class="bg-white rounded-lg shadow-sm w-full">
           <Tabs />  
         </div>
