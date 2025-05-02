@@ -6,7 +6,7 @@ import Tabs from './components/Tabs.vue'
   <main>
     <div class="h-dvh bg-gray-50 p-4"> 
       <div class="">
-        <h1 class="text-2xl font-bold mb-4">Travel Planner</h1>
+        <h1 class="text-2xl font-bold mb-4">My Travel Planner</h1>
         <div class="bg-white rounded-lg shadow-sm w-full">
           <Tabs />  
         </div>
