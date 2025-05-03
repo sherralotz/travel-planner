@@ -1,7 +1,7 @@
 {
   "name": "travel-guide",
   "homepage": "https://sherralotz.github.io/travel-planner/",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -19,10 +19,12 @@
     "@tailwindcss/vite": "^4.1.4",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "firebase": "^11.6.1",
     "sortablejs": "^1.15.6",
     "tailwindcss": "^4.1.4",
     "uuid": "^11.1.0",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-router": "^4.5.1"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.3",

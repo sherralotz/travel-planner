@@ -5,6 +5,11 @@
 
 body {  
   font-family: "Open Sans 13px", sans-serif;  
+  background-color: #F9FAFB;
+}
+
+a, button{
+ cursor: pointer;
 }
 
 #app {

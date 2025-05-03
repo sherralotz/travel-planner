@@ -1,10 +1,33 @@
 <template>
-  <div class="checklist">
-    <ul class="checklist-items mt-4 space-y-2" ref="incompleteItemsContainer">
+  <div class="checklist p-3" :data-checklist-id="checklistId">  
+    <!-- Editable Title -->
+    <div class="mb-3">
+      <h2 
+        v-if="!isEditingTitle" 
+        @click="startEditingTitle" 
+        class="text-xl font-semibold cursor-text truncate"
+        :class="{'text-gray-400': !title}"
+      >
+        {{ title || 'Title' }}
+      </h2>
+      <input
+        v-else
+        type="text"
+        v-model="titleText"
+        @keyup.enter="finishEditingTitle"
+        @blur="finishEditingTitle"
+        @keyup.esc="cancelEditingTitle"
+        class="text-xl font-semibold w-full rounded-md border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-1"
+ 
+        v-focus
+      />
+    </div>
+    
+    <ul class="checklist-items mt-1" ref="incompleteItemsContainer">
       <li
         v-for="(item, index) in incompleteItems"
         :key="item.id"
-        class="flex items-center justify-between bg-white rounded-md p-2 shadow-sm cursor-grab"
+        class="flex items-center justify-between bg-white p-2 mb-1 cursor-grab rounded-md border border-gray-200 shadow-sm"
         :class="{
           'cursor-grabbing': isDragging && draggedIndex === index,
         }"
@@ -18,7 +41,7 @@
             type="checkbox"
             :checked="item.completed"
             @change="toggleItem(item.id)"
-            class="mr-2 rounded-md focus:ring-blue-500 h-5 w-5"
+            class="mr-2 rounded-md focus:ring-blue-500 h-5 w-5 cursor-pointer"
           />
           <span
             v-if="editingItemId !== item.id"
@@ -40,26 +63,29 @@
           @click="deleteItem(item.id)"
           class="text-gray-500 hover:text-red-500 transition-colors focus:outline-none"
         >
-        <FontAwesomeIcon :icon="faClose"  class="me-3"/> 
+        <FontAwesomeIcon :icon="faClose" class="me-3"/> 
         </button>
       </li>
-      <li
-        class="flex items-center justify-between bg-white rounded-md p-2 shadow-sm cursor-pointer no-drag"
-        @click="createNewItem"
-      >
-        <div class="flex items-center text-gray-500"> 
-          <FontAwesomeIcon :icon="faPlus" class="me-2"/> 
-          <span>Add new item</span>
-        </div>
-      </li>
     </ul>
-    <div v-if="completedItems.length > 0" class="mt-8">
+    <!-- ADD NEW ITEM ROW -->
+    <div
+      class="flex items-center justify-between bg-white p-2 cursor-pointer rounded-md border border-gray-200 shadow-sm"
+      @click="createNewItem"
+    >
+      <div class="flex items-center text-gray-500"> 
+        <FontAwesomeIcon :icon="faPlus" class="me-2"/> 
+        <span>Add new item</span>
+      </div>
+    </div>
+    
+    <!-- COMPLETED ITEMS -->
+    <div v-if="completedItems.length > 0" class="mt-3">
       <h3 class="text-lg font-semibold mb-2 text-gray-700">Completed Items</h3>
       <ul class="checklist-items space-y-2" ref="completedItemsContainer">
         <li
           v-for="(item, index) in completedItems"
           :key="item.id"
-          class="flex items-center justify-between bg-white rounded-md p-2 shadow-sm opacity-50 line-through text-gray-400"
+          class="flex items-center justify-between bg-white rounded-md p-2 shadow-sm opacity-50 line-through text-gray-400 border"
           :data-id="item.id"
         >
           <div class="flex items-center">
@@ -83,9 +109,9 @@
         </li>
       </ul>
     </div>
-    <div v-if="items.length === 0" class="text-gray-500 text-center mt-4">
+    <!-- <div v-if="items.length === 0" class="text-gray-500 text-center mt-4">
       Click "Add new item" to get started!
-    </div>
+    </div> -->
   </div>
 </template>
 
@@ -96,18 +122,37 @@ import { Sortable } from 'sortablejs';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars, faClose, faPlus } from '@fortawesome/free-solid-svg-icons';
   
-
 const props = defineProps({
   initialItems: {
     type: Array,
     default: () => [],
   },
+  initialTitle: {
+    type: String,
+    default: '',
+  },
   isEditing: {
     type: Boolean,
     default: false,
   },
+  storageKey: {
+    type: String,
+    default: null // If provided, will use this key for localStorage
+  },
+  checklistId: {
+    type: String,
+    default: () => uuidv4(), // Unique identifier for this checklist instance
+  }
 });
 
+const emit = defineEmits(['update:items', 'update:title', 'change']);
+
+// Title functionality
+const title = ref(props.initialTitle || '');
+const isEditingTitle = ref(false);
+const titleText = ref('');
+
+// Items data
 const items = ref([]);
 const incompleteItemsContainer = ref(null);
 const completedItemsContainer = ref(null);
@@ -124,18 +169,32 @@ const vFocus = {
   mounted: (el) => el.focus(),
 };
 
+// Get the storage key to use
+const getStorageKey = () => {
+  if (props.storageKey) {
+    return props.storageKey;
+  }
+  return `checklist-${props.checklistId}`;
+};
+
 // Load items from local storage on component creation
 onMounted(() => {
-  if (typeof window !== 'undefined') {
-    const savedItems = localStorage.getItem('checklistItems');
-    const passedItems = props.initialItems;
-    if (passedItems && passedItems.length) {
-      items.value = props.initialItems.map((item) => ({
-        id: item.id || uuidv4(), // Use existing ID or generate a new one
-        text: item.text || '',
-        completed: item.completed || false,
-      }));
-    } else if (savedItems) {
+  const storageKey = getStorageKey();
+  
+  // First check if we have initialItems passed as prop
+  if (props.initialItems && props.initialItems.length) {
+    items.value = props.initialItems.map((item) => ({
+      id: item.id || uuidv4(), // Use existing ID or generate a new one
+      text: item.text || '',
+      completed: item.completed || false,
+    }));
+  } 
+  // Then check if we have items in localStorage if storageKey is provided
+  else if (storageKey && typeof window !== 'undefined') {
+    const savedItems = localStorage.getItem(`${storageKey}-items`);
+    const savedTitle = localStorage.getItem(`${storageKey}-title`);
+    
+    if (savedItems) {
       try {
         items.value = JSON.parse(savedItems).map((item) => ({
           ...item,
@@ -144,8 +203,11 @@ onMounted(() => {
       } catch (error) {
         console.error('Failed to parse saved checklist items:', error);
         items.value = [];
-        localStorage.removeItem('checklistItems'); // Clear invalid data
       }
+    }
+    
+    if (savedTitle) {
+      title.value = savedTitle;
     }
   }
 
@@ -153,7 +215,6 @@ onMounted(() => {
   if (incompleteItemsContainer.value) {
     sortableInstance = new Sortable(incompleteItemsContainer.value, {
       animation: 150,
-      filter: '.no-drag', // Don't allow dragging on "add new item" element
       onEnd: (evt) => {
         const newIndex = evt.newIndex;
         const oldIndex = evt.oldIndex;
@@ -169,6 +230,8 @@ onMounted(() => {
 
         isDragging.value = false;
         draggedIndex.value = null;
+        
+        emitChange();
       },
       onStart: (evt) => {
         // Don't start drag if we're editing
@@ -185,14 +248,43 @@ onMounted(() => {
 });
 
 // Save items to local storage whenever the items array changes
-const saveItems = () => {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem('checklistItems', JSON.stringify(items.value));
-  }
+const saveItems = () => { 
+  // Emit update events
+  emit('update:items', items.value);
+  emit('update:title', title.value);
+  emitChange();
+};
+
+// Emit change event with both title and items
+const emitChange = () => { 
+  emit('change', {
+    id: props.checklistId,
+    title: title.value,
+    items: items.value
+  });
+  emit('update:title', title.value); 
 };
 
 watch(items, saveItems, { deep: true });
+watch(title, saveItems);
 
+// Title editing functions
+const startEditingTitle = () => {
+  titleText.value = title.value;
+  isEditingTitle.value = true;
+};
+
+const finishEditingTitle = () => {
+  title.value = titleText.value.trim();
+  isEditingTitle.value = false;
+  emitChange();
+};
+
+const cancelEditingTitle = () => {
+  isEditingTitle.value = false;
+};
+
+// Item functions
 const createNewItem = () => {
   const newItemObj = {
     id: uuidv4(),
@@ -227,6 +319,7 @@ const finishEditing = () => {
       item.text = editingText.value;
     }
     editingItemId.value = null;
+    emitChange();
   }
 };
 
@@ -270,6 +363,8 @@ const toggleItem = (id) => {
     const completedItems = items.value.filter((item) => item.completed);
     const incompleteItems = items.value.filter((item) => !item.completed);
     items.value = [...incompleteItems, ...completedItems];
+    
+    emitChange();
   }
 };
 
@@ -280,6 +375,7 @@ const deleteItem = (id) => {
   }
 
   items.value = items.value.filter((item) => item.id !== id);
+  emitChange();
 };
 
 const incompleteItems = computed(() => {
@@ -316,59 +412,32 @@ onBeforeUnmount(() => {
     sortableInstance = null;
   }
 });
+
+// Expose methods and data for parent components
+defineExpose({
+  items,
+  title,
+  checklistId: props.checklistId,
+  reset: () => {
+    items.value = [];
+    title.value = '';
+    saveItems();
+  },
+  setTitle: (newTitle) => {
+    title.value = newTitle;
+    saveItems();
+  },
+  setItems: (newItems) => {
+    items.value = newItems.map(item => ({
+      id: item.id || uuidv4(),
+      text: item.text || '',
+      completed: item.completed || false
+    }));
+    saveItems();
+  }
+});
 </script>
 
-<style>
-.checklist {
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  padding: 1.5rem;
-}
-
-.checklist-header {
-  display: flex;
-  flex-direction: column;
-  @media (min-width: 640px) {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-  }
-  margin-bottom: 1rem;
-}
-
-.checklist-header h2 {
-  font-size: 1.5rem;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  @media (min-width: 640px) {
-    margin-bottom: 0;
-  }
-}
-
-.checklist-items {
-  margin-top: 1rem;
-  space-y: 0.5rem;
-}
-
-.checklist-items li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background-color: #fff;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  box-shadow: 0 1px 2px rgba(28, 19, 19, 0.05);
-  cursor: grab;
-}
-
-.checklist-items li.completed {
-  opacity: 0.5;
-  text-decoration: line-through;
-  color: #9ca3af;
-  cursor: not-allowed;
-}
-
-.checklist-items li.cursor-grabbing {
-  cursor: grabbing;
-}
+<style scoped>
+/* You can add additional styling here if needed */
 </style>
