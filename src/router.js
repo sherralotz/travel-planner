@@ -1,4 +1,5 @@
-import { createRouter, createWebHistory } from 'vue-router';
+// travel-guide\src\router.js
+import { createRouter, createWebHashHistory } from 'vue-router'; // Import createWebHashHistory
 import { auth } from './config/firebase-config';
 
 // Import your components
@@ -20,13 +21,13 @@ const routes = [
   }
 ];
 
-// Determine base URL based on environment
+// Determine base URL based on environment (no longer strictly needed with hash mode)
 const router = createRouter({
-  history: createWebHistory(process.env.NODE_ENV === 'production' ? '/travel-planner/' : '/'),
+  history: createWebHashHistory(), // Use createWebHashHistory here
   routes
 });
 
-// Navigation guard
+// Navigation guard (remains the same)
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth);
   const currentUser = auth.currentUser;
