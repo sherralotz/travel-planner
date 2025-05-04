@@ -85,22 +85,23 @@
     <div class="bg-white flex-grow relative z-10 ">
       <div v-for="(tab, index) in tabs" :key="`content-${index}`">
         <div v-show="activeTabIndex === index" class="h-full">
+
           <template v-if="tab.variant === 'table'">
             <Grid :title="tab.name" :initialData="tab.tabData" :initialHeaders="tab.tableHeaders"
               @update:data="updateTableData(index, $event)" @update:headers="updateTableHeaders(index, $event)" />
           </template>
           <template v-else-if="tab.variant === 'checklist'">
-            <!-- <div>This is the checklist variant for {{ tab.name }}</div> -->
-            <Checklist />
+            <Checklist /> 
           </template>
           <template v-else-if="tab.variant === 'notes'">
             <!-- <div>This is the notes variant for {{ tab.name }}</div> -->
 
-            <Notes />
+            <Notes/>
           </template> 
           <template v-else>
             {{ tab.content || `Content for ${tab.name}` }}
           </template>
+
         </div>
       </div>
     </div>
@@ -114,7 +115,24 @@ import Notes from './variants/Notes.vue';
 import Grid from './variants/Grid.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPlus, faAngleDown } from '@fortawesome/free-solid-svg-icons';
-  
+const myInitialNotes = ref([
+  { id: '1', title: 'First Note', content: 'This is the first note passed in.' },
+  { id: '2', title: 'Second Note', content: 'Another initial note.' }
+]);
+const myInitialChecklist = ref([
+  { checklistId: '1', title: 'First Note', items: [
+  { id: "1", text: 'Check 1', completed: false },
+  { id: "2", text: 'Check 2', completed: false },
+  { id: "3", text: 'Check 3', completed: false }
+
+  ] },
+  { checklistId: '2', title: 'Second Note', items: [
+  { id: "1a", text: 'Check 1!', completed: false },
+  { id: "2b", text: 'Check 2!', completed: false },
+  { id: "3c", text: 'Check 3!', completed: false }
+
+  ] }
+]);
 // Component state
 const tabs = ref([
 {
@@ -404,3 +422,5 @@ const updateTableHeaders = (index, newHeaders) => {
   }
 };
 </script>
+
+ 

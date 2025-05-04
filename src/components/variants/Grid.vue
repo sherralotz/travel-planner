@@ -36,7 +36,7 @@
                 <tr>
                   <th v-for="(header, colIndex) in headers" :key="colIndex" class="  text-start"
                     :class="{ 'w-1/4': colIndex == 0, ' w-1/4': colIndex === 2 }">
-                    <div class="mx-2 my-2"> {{ header.value }}</div> 
+                    <div class="mx-2 my-2"> {{ header.value }}</div>
                   </th>
                   <th class="w-8 min-w-8 extra-header"> </th>
                 </tr>
@@ -44,89 +44,75 @@
             </table>
           </div>
           <!-- Scrollable tbody with auto height until max -->
-          <div class="row-body overflow-y-scroll w-full max-h-[calc(100dvh-260px)]"  >
+          <div class="row-body overflow-y-scroll w-full max-h-[calc(100dvh-260px)]">
             <table class="min-w-full border-collapse text-sm w-full table-fixed">
               <tbody>
                 <tr v-for="(row, rowIndex) in tabData" :key="rowIndex" class=" w-full" :class="[
                       row.type === 'title' ? 'bg-gray-100' : 'bg-white',
-                    ]">
-                  <template v-for="(cell, columnIndex) in row.value" :key="columnIndex">
+                    ]"> 
+                  <template v-for="(cell, columnIndex) in row.value" :key="columnIndex"> 
                     <td class="border border-gray-200  row-item h-auto data-row"
-                      :class=" { 'w-1/4': columnIndex === 0,' w-1/4': columnIndex === 2 }">
-                      <template v-for="(cellItem, cellIndex) in cell" :key="cellIndex">
-
-                        <!------------------------ COLUMN: DATE --------------------------->
-                        <template v-if="(cellItem.cellType === 'date')">
-                          <div class="item-container"> 
+                      :class=" { 'w-1/4': columnIndex === 0,' w-1/4': columnIndex === 2 }"> 
+                      
+                      <!------------------------ COLUMN: DATE --------------------------->
+                      <template v-if="(cell.cellType === 'date')">
+                        <div class="item-container">
                           <div contenteditable="true"
                             class="outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1 h-full w-full min-h-10"
-                            @blur="updateCell(rowIndex, columnIndex, cellIndex, $event)"
+                            @blur="updateCell(rowIndex, columnIndex, $event)"
                             @keydown="handleKeyDown($event, rowIndex, columnIndex)"
-                            :ref="(el) => setCellRef(el, rowIndex, columnIndex)">
-                            <template v-if="row.type === 'title'">
-                              <!-- COLUMN: DATE | ROW: TITLE -->
-                              <span class="font-bold">{{ cellItem.value }}</span>
-                            </template>
-                            <template v-else>
-                              <!-- COLUMN: DATE | ROW: DEFAULT -->
-                              <span class="text-right">{{ cellItem.value }}</span>
-                            </template>
+                            :ref="(el) => setCellRef(el, rowIndex, columnIndex)"
+                            :class="{'font-bold':row.type === 'title', 'text-right':row.type !== 'title'}"> 
+                            <!-- COLUMN: DATE  -->
+                            {{ cell.value }} 
                           </div>
-                          </div>
-                        </template>
+                        </div>
+                      </template>
 
-                        <!------------------------ COLUMN: ACTIVITY --------------------------->
-                        <template v-else-if="(cellItem.cellType === 'default')">
+                       <!------------------------ COLUMN: ACTIVITY --------------------------->
+                       <template v-else-if="(cell.cellType === 'default')">
                           <div class="item-container"> 
                           <div contenteditable="true"
                             class="outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1 h-full w-full px-2 min-h-10"
-                            @blur="updateCell(rowIndex, columnIndex, cellIndex, $event)"
+                            @blur="updateCell(rowIndex, columnIndex, $event)"
                             @keydown="handleKeyDown($event, rowIndex, columnIndex)"
                             :ref="(el) => setCellRef(el, rowIndex, columnIndex)">
-                            <div class="">
-                              {{ cellItem.value }}
-
-                            </div>
+                          
+                               {{ cell.value }}  
                           </div>
                           </div>
                         </template>
 
-                        <!------------------------ COLUMN: NOTES --------------------------->
-                        <template v-else-if="(cellItem.cellType === 'note' || cellItem.cellType === 'link')">
-
-                          <template v-if="cellItem.cellType === 'note'">
-                            <div class="item-container"> 
+                         <!------------------------ COLUMN: NOTES --------------------------->
+                         <template v-else-if="(cell.cellType === 'note' )">
+                          <div class="item-container"> 
                             <div contenteditable="true"
                               class="outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1  min-h-10 w-full"
-                              @blur="updateCell(rowIndex, columnIndex, cellIndex, $event)"
+                              @blur="updateCell(rowIndex, columnIndex, $event)"
                               @keydown="handleKeyDown($event, rowIndex, columnIndex)"
                               :ref="(el) => setCellRef(el, rowIndex, columnIndex)">
                               <!-- COLUMN: NOTES | ROW: TITLE -->
-                              {{ cellItem.value }}
+                               <template v-if="cell.value"> {{ cell.value.text }}</template> 
                             </div>
-                            </div>
-                          </template>
-                          <template v-else>
-                            <template v-if="cellItem.value">
-                            <div class="m-1">
-                              <span class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px] ">
-                                <a :href="getLinkUrl(cellItem.value)" target="_blank" rel="noopener noreferrer"
+                          </div>
+                          <div class="m-1" v-if="cell.value && cell.value.links">
+                            <template v-for="(linkItem, linkIndex) in cell.value.links" :key="linkIndex">
+                              <span class="bg-gray-300 px-2 py-1 me-1 w-full rounded-xl text-[11px] ">
+                                <a :href="linkItem.url" target="_blank" rel="noopener noreferrer"
                                   class="text-gray-600 hover:text-blue-800 ">
                                   <!-- COLUMN: NOTES | ROW: TITLE | CELLTYPE !== NOTE -->
-                                  <FontAwesomeIcon size="xs" v-if="isMapsLink(cellItem.value)" :icon="faLocationDot" />
+                                  <FontAwesomeIcon size="xs" v-if="isMapsLink(linkItem.url)" :icon="faLocationDot" />
                                   <FontAwesomeIcon v-else :icon="faArrowUpRightFromSquare" />
-                                  {{ getLinkLabel(cellItem.value) }}
+                                   {{linkItem.label}}
                                 </a>
                               </span>
+                            </template> 
                             </div>
-                          </template>
-                          </template>
-                        </template>
+                        </template> 
 
-                        <!------------------------ COLUMN: FALLBACK --------------------------->
-                        <template v-else></template>
-                      </template>
-
+                      <template v-else>
+                        <pre> {{ cell }}</pre>
+                      </template> 
                     </td>
                   </template>
 
@@ -136,7 +122,7 @@
                       <button @click="toggleOptions(rowIndex, $event)"
                         class="text-gray-500 hover:text-gray-800 focus:outline-none w-5">
                         <FontAwesomeIcon :icon="faEllipsisVertical" />
-                      </button> 
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -147,26 +133,26 @@
           <!-- Table footer -->
 
           <div class="me-2">
-          <table class="min-w-full border-collapse text-sm w-full table-fixed border border-gray-200 border-t-0">
-            <tfoot>
-              <tr>
-                <td :colspan="headers.length + 1" class="py-2 bg-gray-100 space-x-2 px-4 row-item h-auto">
-                  <button class="bg-gray-100 text-[11px] text-gray-600 focus:outline-none"
-                    @click="addRow(tabData.length - 1)">
-                    <FontAwesomeIcon :icon="faPlus" class="me-1" />
-                    Add New Row
-                  </button>
+            <table class="min-w-full border-collapse text-sm w-full table-fixed border border-gray-200 border-t-0">
+              <tfoot>
+                <tr>
+                  <td :colspan="headers.length + 1" class="py-2 bg-gray-100 space-x-2 px-4 row-item h-auto">
+                    <button class="bg-gray-100 text-[11px] text-gray-600 focus:outline-none"
+                      @click="addRow(tabData.length - 1)">
+                      <FontAwesomeIcon :icon="faPlus" class="me-1" />
+                      Add New Row
+                    </button>
 
-                  <button class="bg-gray-100 text-[11px] text-gray-600 focus:outline-none"
-                    @click="addTitleRow(tabData.length - 1)">
-                    <FontAwesomeIcon :icon="faPlus" class="me-1" />
-                    Add New Title Row
-                  </button>
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
+                    <button class="bg-gray-100 text-[11px] text-gray-600 focus:outline-none"
+                      @click="addTitleRow(tabData.length - 1)">
+                      <FontAwesomeIcon :icon="faPlus" class="me-1" />
+                      Add New Title Row
+                    </button>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
         </div>
 
 
@@ -178,31 +164,32 @@
     </div>
 
     <!-- Detached Dropdown -->
-    <div
-      v-if="dropdown.visible"
-      :style="{
+    <div v-if="dropdown.visible" :style="{
         position: 'fixed',
         top: dropdown.top + 'px',
         left: dropdown.left + 'px',
         zIndex: 1000
       }"
       class="dropdown-container w-32 rounded-md shadow-lg bg-white ring-1 ring-gray-300 ring-opacity-5 focus:outline-none py-1 text-[11px]"
-      role="menu"
-      aria-orientation="vertical"
-    >
-      <button @click="addRow(dropdown.rowIndex)" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
+      role="menu" aria-orientation="vertical">
+      <button @click="addRow(dropdown.rowIndex)"
+        class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
         Add Row Below
       </button>
-      <button @click="addTitleRow(dropdown.rowIndex)" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
+      <button @click="addTitleRow(dropdown.rowIndex)"
+        class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
         Add Title Row Below
       </button>
-      <button @click="openLinkModal(dropdown.rowIndex)" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
+      <button @click="openLinkModal(dropdown.rowIndex)"
+        class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
         Add Link
       </button>
-      <button @click="toggleRowType(dropdown.rowIndex)" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
+      <button @click="toggleRowType(dropdown.rowIndex)"
+        class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100" role="menuitem">
         {{ tabData[dropdown.rowIndex]?.type === 'title' ? 'Set to Default' : 'Set to Title' }}
       </button>
-      <button @click="deleteRow(dropdown.rowIndex)" class="block w-full text-left px-4 py-2 text-red-700 hover:bg-red-100" role="menuitem">
+      <button @click="deleteRow(dropdown.rowIndex)"
+        class="block w-full text-left px-4 py-2 text-red-700 hover:bg-red-100" role="menuitem">
         Delete Row
       </button>
     </div>
@@ -275,7 +262,7 @@ watch(
 watch(
   tabData,
   (newData) => { 
-    // console.log('Changed:', JSON.parse(JSON.stringify(newData))) 
+   console.log('Changed:', JSON.parse(JSON.stringify(newData))) 
     emit('update:data', newData);
   },
   { deep: true }
@@ -307,14 +294,122 @@ const handleResize = () => {
     dropdown.visible = false; 
   }
 };
+ 
+// Function to update cell data when edited
+const updateCell = (rowIndex, columnIndex, event) => {
+  // Get the new value from the contenteditable element
+  const newValue = event.target.textContent.trim();
+  
+  // Create a copy of the current data to maintain reactivity
+  const newTableData = [...tabData.value];
+  const row = newTableData[rowIndex];
+  
+  // Handle different row types (title row vs regular row)
+  if (row.type === 'title') {
+    // Update title row
+    row.value[columnIndex].value = newValue;
+  } else {
+    // For regular rows, check if we need to update specific cellType properties
+    if (columnIndex === 2) { // Notes column
+      // If the cell has a link structure
+      if (typeof row.value[columnIndex].value === 'object' && row.value[columnIndex].value !== null) {
+        row.value[columnIndex].value.text = newValue;
+      } else {
+        // If it's just a string value
+        row.value[columnIndex].value = newValue;
+      }
+    } else {
+      // For regular cells
+      row.value[columnIndex].value = newValue;
+    }
+  }
+  
+  // Update the reference to trigger reactivity
+  tabData.value = newTableData;
+};
 
+// Function to add a new default row at the specified index
+const addRow = (index) => {
+  // Create new row with default empty values
+  const newRow = {
+    type: "default",
+    value: headers.value.map(header => {
+      // Create appropriate cell type based on header
+      if (header.type === 'date') {
+        return {
+          cellType: "date",
+          value: ""
+        };
+      } else if (header.value === 'Notes') {
+        return {
+          cellType: "note",
+          value: ""
+        };
+      } else {
+        return {
+          cellType: "default",
+          value: ""
+        };
+      }
+    })
+  };
+  
+  // Create a copy of the data and insert the new row
+  const newTableData = [...tabData.value];
+  newTableData.splice(index + 1, 0, newRow);
+  tabData.value = newTableData;
+  
+  // Focus on the first cell of the new row after rendering
+  nextTick(() => {
+    if (cellRefs.value[index + 1] && cellRefs.value[index + 1][0]) {
+      cellRefs.value[index + 1][0].focus();
+    }
+  });
+  
+  // Hide dropdown if it was open
+  dropdown.visible = false;
+};
 
-// Function to update cell content
-const updateCell = (rowIndex, columnIndex, noteIndex, event) => {
-  const latestTextValue = event.target.innerText;
-  const clonedOriginalData = [...tabData.value]; 
-  const modifiedCell = clonedOriginalData[rowIndex].value[columnIndex][noteIndex];
-  modifiedCell.value = latestTextValue; 
+// Function to add a new title row at the specified index
+const addTitleRow = (index) => {
+  // Create new title row with empty values
+  const newTitleRow = {
+    type: "title",
+    value: headers.value.map(header => {
+      // Create appropriate cell type based on header
+      if (header.type === 'date') {
+        return {
+          cellType: "date",
+          value: ""
+        };
+      } else if (header.value === 'Notes') {
+        return {
+          cellType: "note",
+          value: ""
+        };
+      } else {
+        return {
+          cellType: "default",
+          value: ""
+        };
+      }
+    })
+  };
+  
+  // Create a copy of the data and insert the new title row
+  const newTableData = [...tabData.value];
+  newTableData.splice(index + 1, 0, newTitleRow);
+  tabData.value = newTableData;
+  
+  // Focus on the first cell of the new row after rendering
+  nextTick(() => {
+    if (cellRefs.value[index + 1] && cellRefs.value[index + 1][0]) {
+      cellRefs.value[index + 1][0].focus();
+    }
+  });
+  
+  // Hide dropdown if it was open
+  dropdown.visible = false;
 };
 
 // Function to toggle the options dropdown
@@ -329,54 +424,6 @@ const toggleOptions = (rowIndex, event) => {
     dropdown.top = rect.bottom + 4;
     dropdown.left = rect.left - 120; 
   }
-};
-
-// Add a new row after the specified index
-const addRow = (afterIndex) => {
-  const newRegularRow = {
-    type: 'default',
-    value: [
-            [{ cellType: 'date', value: '9:00 AM' }],
-            [{ cellType: 'default', value: 'Explore' }],
-            [ { cellType: 'note', value: 'dora the explora' },
-            { cellType: "link", value: "[Hotel California](https://maps.app.goo.gl/xdvwc5kk9BQ48tge7})" }] 
-          ]
-  }; 
-  const newTableData = [...tabData.value];
-  newTableData.splice(afterIndex + 1, 0, newRegularRow); 
-  tabData.value = newTableData;
-  openOptionsIndex.value = null;
-  nextTick(() => {
-    if (cellRefs.value[afterIndex + 1] && cellRefs.value[afterIndex + 1][0]) {
-      cellRefs.value[afterIndex + 1][0].focus();
-    }
-  });
-  dropdown.visible = false; 
-};
-
-// Add a title row after the specified index
-const addTitleRow = (afterIndex) => {
-  const newTitleRow = {
-    type: 'title', 
-    value: [
-            [{ cellType: 'date', value: 'Tue, Jan 23' }],
-            [{ cellType: 'default', value: 'Chill Day' }],
-            [{ cellType: 'note', value: 'Have fun!' },
-            { cellType: "link", value: "[Hotel California](https://maps.app.goo.gl/xdvwc5kk9BQ48tge7})" }
-            ] 
-          ]
-  };
-  const newTableData = [...tabData.value];
-  newTableData.splice(afterIndex + 1, 0, newTitleRow);
-  console.log('title:', JSON.parse(JSON.stringify(newTableData)))
-  tabData.value = newTableData;
-  openOptionsIndex.value = null;
-  nextTick(() => {
-    if (cellRefs.value[afterIndex + 1] && cellRefs.value[afterIndex + 1][0]) {
-      cellRefs.value[afterIndex + 1][0].focus();
-    }
-  });
-  dropdown.visible = false;
 };
 
 // Delete row at the specified index
@@ -415,9 +462,9 @@ const handleKeyDown = (event, rowIndex, cellIndex) => {
 };
 
 const setCellRef = (el, rowIndex, cellIndex) => {
-  if (!cellRefs.value[rowIndex]) {
-    cellRefs.value[rowIndex] = [];
-  }
+  if (!cellRefs.value[rowIndex]) { 
+    cellRefs.value[rowIndex] = []; 
+  } 
   cellRefs.value[rowIndex][cellIndex] = el;
 };
 

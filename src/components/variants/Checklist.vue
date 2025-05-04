@@ -181,6 +181,7 @@ const getStorageKey = () => {
 onMounted(() => {
   const storageKey = getStorageKey();
   
+  // console.log('initialItems', JSON.parse(JSON.stringify(props.initialItems)))
   // First check if we have initialItems passed as prop
   if (props.initialItems && props.initialItems.length) {
     items.value = props.initialItems.map((item) => ({
@@ -189,27 +190,7 @@ onMounted(() => {
       completed: item.completed || false,
     }));
   } 
-  // Then check if we have items in localStorage if storageKey is provided
-  else if (storageKey && typeof window !== 'undefined') {
-    const savedItems = localStorage.getItem(`${storageKey}-items`);
-    const savedTitle = localStorage.getItem(`${storageKey}-title`);
-    
-    if (savedItems) {
-      try {
-        items.value = JSON.parse(savedItems).map((item) => ({
-          ...item,
-          id: item.id || uuidv4(), // Ensure all items have an ID
-        }));
-      } catch (error) {
-        console.error('Failed to parse saved checklist items:', error);
-        items.value = [];
-      }
-    }
-    
-    if (savedTitle) {
-      title.value = savedTitle;
-    }
-  }
+   
 
   // Initialize Sortable.js for incomplete items only
   if (incompleteItemsContainer.value) {

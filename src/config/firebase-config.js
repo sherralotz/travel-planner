@@ -1,10 +1,9 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app"; 
+import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
- 
+import { getFirestore } from "firebase/firestore"; 
 
-// Your web app's Firebase configuration 
+// Your web app's Firebase configuration
 const firebaseConfig = {
   apiKey: "AIzaSyCG9Z5aha-FVNDjt12qxP06Pep_6IdFRyk",
   authDomain: "planner-76848.firebaseapp.com",
@@ -20,6 +19,5 @@ const app = initializeApp(firebaseConfig);
 // const analytics = getAnalytics(app);
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();
-const db = getFirestore(app); // Firestore initialization
-
-export { auth, provider,  signInWithPopup, signOut, db  };
+const db = getFirestore(app); // Firestore initialization 
+export { auth, provider, signInWithPopup, signOut, db };

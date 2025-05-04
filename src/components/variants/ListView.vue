@@ -6,22 +6,21 @@
             <div class="font-bold bg-gray-200 flex-col flex-grow-1 pt-2 pb-2"> 
               <span class="ms-2 " v-if="dayGroup.titleRow.titleLabel"> {{ dayGroup.titleRow.titleLabel }}</span>  
 
-              <div v-for="(noteItem, noteIndex) in dayGroup.titleRow.notes" :key="noteIndex" class="ms-2"> 
-                <span v-if="noteItem.cellType === 'link' && noteItem.value">
+              <div>  
+                <span  v-for="(linkItem, noteIndex) in dayGroup.titleRow.notes" :key="noteIndex" >
                   <a
-                      :href="getLinkUrl(noteItem.value)"
+                      :href="linkItem.url"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px]"
+                      class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px] me-1"
                     >
  
-                      <FontAwesomeIcon v-if="isMapsLink(noteItem.value)" :icon="faLocationDot" class="me-1"/>
+                      <FontAwesomeIcon v-if="isMapsLink(linkItem.url)" :icon="faLocationDot" class="me-1"/>
                       <FontAwesomeIcon v-else :icon="faArrowUpRightFromSquare" class="me-1"/>
                        
-                      {{ getLinkLabel(noteItem.value) }}
+                      {{ linkItem.label }}
                     </a>
-                </span>
-                <span v-else>{{ noteItem.value }}</span>
+                </span> 
               </div>
             </div> 
           </div>  
@@ -32,22 +31,24 @@
 
             <div class="ms-2 ps-2">
               <div class="">{{ item.activity }}  </div>
-              <div v-for="(noteItem, noteIndex) in item.notes" :key="noteIndex" class=" "> 
-                <span v-if="noteItem.cellType === 'link' && noteItem.value" >
+              <div class="text-gray-600">{{ item.notes.text }}  </div>
+              <!-- <div class="">{{ item.notes }}  </div> -->
+
+              <div> 
+                <span  v-for="(linkItem, noteIndex) in item.notes.links" :key="noteIndex" class=" ">
                   <a
-                      :href="getLinkUrl(noteItem.value)"
+                      :href="(linkItem.url)"
                       target="_blank"
                       rel="noopener noreferrer"
-                      class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px]"
+                      class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px] me-1"
                     >
  
-                      <FontAwesomeIcon v-if="isMapsLink(noteItem.value)" :icon="faLocationDot" class="me-1"/>
+                      <FontAwesomeIcon v-if="isMapsLink(linkItem.url)" :icon="faLocationDot" class="me-1"/>
                       <FontAwesomeIcon v-else :icon="faArrowUpRightFromSquare" class="me-1"/>
                        
-                      {{ getLinkLabel(noteItem.value) }}
+                      {{ linkItem.label }}
                     </a>
-                </span>
-                <span class="text-gray-500 text-sm" v-else>{{ noteItem.value }}</span>
+                </span> 
               </div>
             </div>
           </div>  
@@ -82,9 +83,12 @@
         if (currentGroup) {
           groups.push(currentGroup);
         } 
-        const dateValue = row.value[0][0].value;
-        const activityValue = row.value[1][0].value;
-        const noteValues = row.value[2]; 
+        const dateValue = row.value[0].value;
+        const activityValue = row.value[1].value;
+        const noteValues = row.value[2].value; 
+        // console.log('1dateValue',dateValue)
+        // console.log('1activityValue',activityValue)
+        // console.log('1noteValues', JSON.parse(JSON.stringify(noteValues)))
         currentGroup = {
           titleRow: { 
             date: dateValue,
@@ -97,14 +101,17 @@
       // If this is not a title row and we have a current group, add it to the items
       else if (currentGroup) {
         // console.log('row', JSON.parse(JSON.stringify(row)))
-        const dateValue = row.value[0][0].value;
-        const activityValue = row.value[1][0].value;
-        const noteValues = row.value[2]; 
+        const dateValue = row.value[0].value;
+        const activityValue = row.value[1].value;
+        const noteValues = row.value[2].value; 
+        // console.log('2dateValue',dateValue)
+        // console.log('2activityValue',activityValue)
+        // console.log('2noteValues', JSON.parse(JSON.stringify(noteValues)))
 
         currentGroup.rowsUnderGroup.push({
-          date: row.value[0][0].value || '',
-          activity: row.value[1][0].value || '',
-          notes: row.value[2] || ''
+          date: dateValue || '',
+          activity: activityValue || '',
+          notes: noteValues || ''
         }); 
       }
     });
@@ -114,7 +121,7 @@
       groups.push(currentGroup);
     }
   
-    console.log('groups', JSON.parse(JSON.stringify(groups)))
+    // console.log('groups', JSON.parse(JSON.stringify(groups)))
     return groups;
   });
   

@@ -1,5 +1,6 @@
 <script setup>
-import Tabs from '../components/Tabs.vue';
+import PlansList from './PlansList.vue';
+import Grid from '../components/variants/Grid.vue';
 import { auth } from '../config/firebase-config';
 import { ref, onMounted } from 'vue';
 
@@ -26,8 +27,9 @@ onMounted(() => {
         </button>
       </div>
       <div class="bg-white rounded-lg shadow-sm w-full">
-        <Tabs />
+        
+        <PlansList/> 
       </div>
-    </div>
+    </div> 
   </div>
 </template>

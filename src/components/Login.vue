@@ -11,8 +11,7 @@ const error = ref(null);
 // Check if user is already logged in
 onMounted(() => {
   const unsubscribe = auth.onAuthStateChanged((user) => {
-    if (user) {
-      // User is already signed in, redirect to home
+    if (user) { 
       router.push('/');
     }
   });
