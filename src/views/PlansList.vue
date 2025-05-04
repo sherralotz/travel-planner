@@ -1,25 +1,72 @@
 <template>
-    <div>
-      <h1>Your Travel Plans</h1>
-  
-      <button @click="showCreatePlan = true">Create a New Plan</button>
-  
-      <CreatePlan v-if="showCreatePlan" @planCreated="fetchPlans" @close="showCreatePlan = false" />
-  
-      <div v-if="loading">Loading plans...</div>
-      <div v-else-if="error">{{ error }}</div>
-      <div v-else-if="plans.length > 0">
-        <ul>
-          <li v-for="plan in plans" :key="plan.id">
-            <router-link :to="`/plan/${plan.id}`">{{ plan.title }}</router-link>
-          </li>
-        </ul>
-      </div>
-      <div v-else>
-        <p>You haven't created any travel plans yet.</p>
-      </div>
+  <div class="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg">
+    <h1 class="text-3xl font-bold text-indigo-700 mb-8">Your Travel Plans</h1>
+    
+    <button 
+      @click="showCreatePlan = true"
+      class="mb-8 px-5 py-3 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 transition-colors shadow-md flex items-center gap-2"
+    >
+      <span class="i-lucide-plus-circle w-5 h-5"></span>
+      Create a New Plan
+    </button>
+    
+    <CreatePlan 
+      v-if="showCreatePlan" 
+      @planCreated="fetchPlans" 
+      @close="showCreatePlan = false" 
+      class="mb-8"
+    />
+    
+    <!-- Loading state -->
+    <div 
+      v-if="loading"
+      class="py-12 text-center text-gray-500 flex items-center justify-center gap-3"
+    >
+      <span class="i-lucide-loader-2 w-6 h-6 animate-spin"></span>
+      <span>Loading plans...</span>
     </div>
-  </template>
+    
+    <!-- Error state -->
+    <div 
+      v-else-if="error"
+      class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
+    >
+      {{ error }}
+    </div>
+    
+    <!-- Plans list -->
+    <div 
+      v-else-if="plans.length > 0"
+      class="border border-gray-200 rounded-xl overflow-hidden"
+    >
+      <ul class="divide-y divide-gray-200">
+        <li 
+          v-for="plan in plans" 
+          :key="plan.id"
+          class="hover:bg-indigo-50 transition-colors"
+        >
+          <router-link 
+            :to="`/plan/${plan.id}`"
+            class="flex items-center justify-between p-4"
+          >
+            <span class="font-medium text-indigo-800">{{ plan.title }}</span>
+            <span class="i-lucide-chevron-right w-5 h-5 text-gray-400"></span>
+          </router-link>
+        </li>
+      </ul>
+    </div>
+    
+    <!-- Empty state -->
+    <div 
+      v-else
+      class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300"
+    >
+      <div class="i-lucide-map w-12 h-12 mx-auto mb-4 text-gray-400"></div>
+      <p class="text-lg text-gray-600">You haven't created any travel plans yet.</p>
+      <p class="text-sm text-gray-500 mt-2">Click "Create a New Plan" to start planning your next adventure!</p>
+    </div>
+  </div>
+</template>
   
   <script setup>
   import { ref, onMounted, inject } from 'vue';
@@ -47,7 +94,7 @@
     }
   
     try {
-      console.log(`currentUser: ${currentUser.value.uid}`)
+      //console.log(`currentUser: ${currentUser.value.uid}`)
       const plansCollection = collection(db, `users/${currentUser.value.uid}/travelPlans`);
       const q = query(plansCollection, where('createdBy', '==', currentUser.value.uid));
       const querySnapshot = await getDocs(q);

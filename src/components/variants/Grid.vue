@@ -206,6 +206,8 @@ import LinkModal from '../common/LinkModal.vue';
 import { format } from 'date-fns';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPlus, faEllipsisVertical, faTable, faListUl, faLocationDot, faArrowUpRightFromSquare} from '@fortawesome/free-solid-svg-icons';
+
+
 const props = defineProps({
   title: {
     type: String,
@@ -214,6 +216,11 @@ const props = defineProps({
   initialData: {
     type: Array,
     default: () => [],
+  },
+  tabKey: {
+    type: String,
+    required: true,
+    default: '',
   },
   initialHeaders: {
     type: Array,
@@ -249,6 +256,12 @@ const openLinkModal = (clickedRowIndex) => {
   dropdown.visible = false;
 };
 
+const emitChange = (newData) => {  
+   const dataPath = `tabs.${props.tabKey}.value.tableData`; 
+   console.log('Changed:', JSON.parse(JSON.stringify(newData)), dataPath)  
+   emit('update:data', { dataPath, updatedData: newData }); 
+};
+
 // Watch for changes in data props
 watch(
   () => props.initialHeaders,
@@ -262,8 +275,7 @@ watch(
 watch(
   tabData,
   (newData) => { 
-   console.log('Changed:', JSON.parse(JSON.stringify(newData))) 
-    emit('update:data', newData);
+    emitChange(newData);
   },
   { deep: true }
 );

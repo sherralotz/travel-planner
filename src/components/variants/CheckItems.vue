@@ -124,7 +124,7 @@ const props = defineProps({
   checklistId: { type: String, default: () => uuidv4() },
 });
 
-const emit = defineEmits(['update:items', 'update:title', 'change']);
+const emit = defineEmits(['update:title', 'change']);
 
 // Title functionality
 const title = ref(props.initialTitle || '');
@@ -175,8 +175,7 @@ const saveItems = () => {
   if (storageKey && typeof window !== 'undefined') {
     localStorage.setItem(`${storageKey}-items`, JSON.stringify(items.value));
     localStorage.setItem(`${storageKey}-title`, title.value);
-  }
-  emit('update:items', items.value);
+  } 
   emit('update:title', title.value);
   emitChange();
 };

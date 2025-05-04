@@ -1,34 +1,104 @@
 <template>
-  <div>
-    <h2>Create Your Travel Plan</h2>
-    <form @submit.prevent="createTravelPlan">
+  <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 max-w-2xl mx-auto">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-indigo-700">Create Your Travel Plan</h2>
+      <button 
+        type="button" 
+        @click="$emit('close')"
+        class="p-2 rounded-full hover:bg-gray-100 text-gray-500"
+      >
+        <span class="i-lucide-x w-5 h-5"></span>
+      </button>
+    </div>
+
+    <form @submit.prevent="createTravelPlan" class="space-y-6">
       <div>
-        <label for="title">Title:</label>
-        <input type="text" id="title" v-model="title" required />
+        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Plan Title:</label>
+        <input 
+          type="text" 
+          id="title" 
+          v-model="title" 
+          required 
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          placeholder="e.g., Summer Europe Trip 2025"
+        />
       </div>
 
-      <div>
-        <h2>Include in your plan:</h2>
-        <div>
-          <input type="checkbox" id="itinerary" v-model="includeItinerary" />
-          <label for="itinerary">Itinerary (Table)</label>
-        </div>
-        <div>
-          <input type="checkbox" id="notes" v-model="includeNotes" />
-          <label for="notes">Notes</label>
-        </div>
-        <div>
-          <input type="checkbox" id="thingsToBring" v-model="includeThingsToBring" />
-          <label for="thingsToBring">Things to Bring (Checklist)</label>
-        </div>
-        <div>
-          <input type="checkbox" id="thingsToDo" v-model="includeThingsToDo" />
-          <label for="thingsToDo">Things to Do (Checklist)</label>
+      <div class="bg-indigo-50 rounded-lg p-4">
+        <h3 class="text-lg font-medium text-indigo-800 mb-3">Include in your plan:</h3>
+        
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="itinerary" 
+              v-model="includeItinerary"
+              class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
+            />
+            <label for="itinerary" class="flex items-center gap-2 text-gray-700">
+              <span class="i-lucide-calendar w-5 h-5 text-indigo-500"></span>
+              Itinerary (Table)
+            </label>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="notes" 
+              v-model="includeNotes"
+              class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
+            />
+            <label for="notes" class="flex items-center gap-2 text-gray-700">
+              <span class="i-lucide-file-text w-5 h-5 text-indigo-500"></span>
+              Notes
+            </label>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="thingsToBring" 
+              v-model="includeThingsToBring"
+              class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
+            />
+            <label for="thingsToBring" class="flex items-center gap-2 text-gray-700">
+              <span class="i-lucide-luggage w-5 h-5 text-indigo-500"></span>
+              Things to Bring (Checklist)
+            </label>
+          </div>
+          
+          <div class="flex items-center gap-3">
+            <input 
+              type="checkbox" 
+              id="thingsToDo" 
+              v-model="includeThingsToDo"
+              class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
+            />
+            <label for="thingsToDo" class="flex items-center gap-2 text-gray-700">
+              <span class="i-lucide-list-checks w-5 h-5 text-indigo-500"></span>
+              Things to Do (Checklist)
+            </label>
+          </div>
         </div>
       </div>
 
-      <button type="submit">Create Plan</button>
-      <button type="button" @click="$emit('close')">Cancel</button>
+      <div class="flex gap-4 justify-end pt-4">
+        <button 
+          type="button" 
+          @click="$emit('close')"
+          class="px-5 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+        >
+          Cancel
+        </button>
+        
+        <button 
+          type="submit"
+          class="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center gap-2"
+        >
+          <span class="i-lucide-save w-5 h-5"></span>
+          Create Plan
+        </button>
+      </div>
     </form>
   </div>
 </template>
@@ -38,7 +108,8 @@ import { ref, inject } from 'vue';
 import { db } from '@/config/firebase-config';
 import { collection, addDoc } from 'firebase/firestore';
 import { useRouter } from 'vue-router';
-
+import { v4 as uuidv4 } from 'uuid';
+ 
 const currentUser = inject('currentUser');
 const title = ref('');
 const includeItinerary = ref(false);
@@ -62,9 +133,9 @@ async function createTravelPlan() {
   let tabPositionCounter = 1;
 
   if (includeItinerary.value) {
-    tabsData['table_1'] = {
+    tabsData['table_1'] = { 
       tabPosition: tabPositionCounter++,
-      tabId: 1,
+      tabId: uuidv4(),
       title: 'Itinerary',
       type: 'table',
       value: { headers: [{
@@ -170,57 +241,59 @@ async function createTravelPlan() {
   }
 
   if (includeNotes.value) {
-    tabsData['notes_1'] = {
+    tabsData['notes_1'] = { 
       tabPosition: tabPositionCounter++,
-      tabId: 2,
+      tabId: uuidv4(),
       title: 'Notes',
       type: 'notes',
-      value: { notesList: [
-        { 
-            title: "",
-            checklistId: "20",
+      value: {  
+        "noteItem_1":{ 
+            id: uuidv4(), 
+            title: "NoteCheck title",  
             isChecklist: true,
             items: [
-                { id: "10", text: 'NoteCheck 1', completed: false },
-                { id: "11", text: 'NoteCheck 2', completed: false }
+                { id: uuidv4(), text: 'NoteCheck 1', completed: false },
+                { id: uuidv4(), text: 'NoteCheck 2', completed: false }
             ],
-            content: ""
+            content: "",
+            timestamp: new Date().toISOString()
         },
-        {
-            title: "Title goes here!",
-            checklistId: "21",
+        "noteItem_2":{
+            id: uuidv4(), 
+            title: "Title goes here!",  
             isChecklist: false,
             items: [],
-            content: "Hello world!"
-        }
-      ] },
+            content: "Hello world!",
+            timestamp: new Date().toISOString()
+        } 
+      }
     };
   }
 
   if (includeThingsToBring.value) {
-    tabsData['checklist_1'] = {
+    tabsData['checklist_1'] = { 
       tabPosition: tabPositionCounter++,
-      tabId: 3,
+      tabId: uuidv4(),
       title: 'Things to Bring',
       type: 'checklist',
       value: { title: "",  
                 items: [
-                    { id: "1", text: 'Bag', completed: false },
-                    { id: "2", text: 'Tissue', completed: false },
-                    { id: "3", text: 'First aid kit', completed: false }
+                    { id: uuidv4(), text: 'Bag', completed: false },
+                    { id: uuidv4(), text: 'Tissue', completed: false },
+                    { id: uuidv4(), text: 'First aid kit', completed: false }
                 ] },
     };
   }
 
   if (includeThingsToDo.value) {
-    tabsData['checklist_2'] = {
+    tabsData['checklist_2'] = { 
       tabPosition: tabPositionCounter++,
-      tabId: 4,
+      tabId: uuidv4(),
       title: 'Things to Do',
       type: 'checklist',
       value: { title: 'Priorities', items: [ 
-        { id: "4", text: 'Check packing list', completed: false },
-        { id: "5", text: 'Pack', completed: false }
+        { id: uuidv4(), text: 'Check packing list', completed: false },
+        { id: uuidv4(), text: 'Pack', completed: false }
         ] },
     };
   }
@@ -234,7 +307,7 @@ async function createTravelPlan() {
 
   try {
     const docRef = await addDoc(collection(db, `users/${currentUser.value.uid}/travelPlans`), travelPlanObj);
-    console.log('Travel Plan created with ID: ', docRef.id);
+    //console.log('Travel Plan created with ID: ', docRef.id);
     emit('planCreated'); // Emit the event for PlansList to refetch
     emit('close'); // Emit the close event
     router.push(`/plan/${docRef.id}`);

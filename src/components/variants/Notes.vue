@@ -17,9 +17,9 @@
         </div>
 
         <div v-else>
-          <Checklist :initialItems="newNote.items"
-            @update:title="updateChecklistTitle"
-            @change="handleNewChecklistChange" />
+          <Checklist :initialItems="newNote.items" :initialTitle="newNote.title"
+            @update:title="updateChecklistTitle" :note="activeNote" :newNote="true"
+            @update-note-checklist="handleNewChecklistChange" />
         </div>
 
         <div class="flex justify-between pt-2 border-t border-gray-200 mt-2">
@@ -36,10 +36,9 @@
       </div>
     </div>
 
-    <!------------------------- NOTES LIST ------------------------->
     <div class="overflow-auto h-[calc(100dvh-230px)]">
       <div class="notes-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-3" ref="notesGrid">
-        <div v-for="(note, index) in notes" :key="note.id"
+        <div v-for="(note, index) in sortedNotes" :key="note.id"
           class="note-card bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
           @click="openEditModal(note)">
           <div class="note-menu-container relative w-full">
@@ -51,29 +50,31 @@
               class="note-menu absolute top-8 right-0 bg-white rounded-md shadow-lg border border-gray-200 w-32 z-10"
               @click.stop>
               <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
-                @click="duplicateNote(index); toggleMenu(null)">
+                @click="duplicateNote(note); toggleMenu(null)">
                 Duplicate
               </button>
               <button class="note-menu-item block px-4 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
-                @click="deleteNote(index); toggleMenu(null)">
+                @click="deleteNote(note.key); toggleMenu(null)">
                 Delete
               </button>
               <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
-                @click="convertToChecklist(index); toggleMenu(null)">
+                @click="convertToChecklist(note); toggleMenu(null)">
                 Checklist
               </button>
             </div>
           </div>
-          <!-- {{ note }} -->
           <h3 class="text-xl font-semibold text-gray-800">
             {{ note.title }}
           </h3>
 
           <p v-if="!note.isChecklist" class="text-gray-700 whitespace-pre-line">{{ note.content }}</p>
 
-          <div v-else>
+          <div v-else> 
             <ul class="list-disc pl-5 text-gray-700">
-              <li v-for="item in note.items" :key="item.id">{{ item.text }}</li>
+              <li v-for="item in note.items" :key="item.id" class="flex">
+                <div :class=" { 'bg-pink-200': item.completed,'bg-green-200': !item.completed}"> check </div>
+                <div> {{item.text}}</div>
+              </li>
             </ul>
           </div>
         </div>
@@ -96,40 +97,57 @@
 
       <div v-else>
         <Checklist :initialItems="activeNote.items"
-          :initialTitle="activeNote.title"
-          @change="handleEditChecklistChange" />
+          :initialTitle="activeNote.title" :note="activeNote"
+          @update-note-checklist="handleEditChecklistChange" />
       </div>
 
       <div class="flex justify-end mt-4">
         <button @click="saveEditedNote" class="bg-blue-500 text-white px-4 py-2 rounded mr-2">Save</button>
-        <button @click="closeModal" class="bg-gray-300 px-4 py-2 rounded">Cancel</button>
+        <button @click="closeModal" class="bg-gray-300 px-4 py-2 rounded">Close</button>
       </div>
     </Modal>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch, defineProps } from 'vue';
+import { ref, onMounted, nextTick, watch, defineProps, computed, inject } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import Checklist from '../variants/Checklist.vue';
 import Modal from '../common/Modal.vue';
 import Sortable from 'sortablejs';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import useDataUpdater from '@/composables/useDataUpdater';
 
 // Props
 const props = defineProps({
   initialNotes: {
-    type: Array,
-    default: () => []
-  }
+    type: Object,
+    default: () => {}
+  },
+  tabKey: {
+    type: String,
+    required: false,
+  },
+  travelPlanId: {
+    type: String,
+    required: false,
+  },
 });
+const emit = defineEmits(['update-note']);
 
 // State
 const notes = ref([]);
 const isCreatingNote = ref(false);
 const openMenuId = ref(null);
 const newNote = ref(createEmptyNote());
+const editingNoteId = ref(null);
+
+const currentUser = inject('currentUser');
+const userId = currentUser.value.uid;
+const travelPlanId = ref(props.travelPlanId || '');
+const tabKey = ref(props.tabKey || '');
+const isLoaded = ref(false);
 
 // Modal State
 const showModal = ref(false);
@@ -137,23 +155,34 @@ const activeNote = ref(null);
 
 const notesGrid = ref(null);
 
+const sortedNotes = computed(() => {
+  return [...notes.value].sort((a, b) => {
+    if (a.position !== undefined && b.position !== undefined) {
+      return a.position - b.position;
+    } else if (a.timestamp && b.timestamp) {
+      return new Date(b.timestamp) - new Date(a.timestamp); // Sort by latest timestamp initially
+    }
+    return 0;
+  });
+});
+
 onMounted(() => {
   loadNotes();
   nextTick(() => {
+    isLoaded.value = true;
     if (notesGrid.value) {
       Sortable.create(notesGrid.value, {
         animation: 150,
         onEnd: (evt) => {
           const movedItem = notes.value.splice(evt.oldIndex, 1)[0];
           notes.value.splice(evt.newIndex, 0, movedItem);
-          saveNotes();
+          updateNotePositions();
         },
       });
     }
   });
 });
 
-watch(notes, saveNotes, { deep: true });
 
 function createEmptyNote() {
   return {
@@ -168,18 +197,34 @@ function createEmptyNote() {
 
 // Load notes, prioritizing initialNotes prop
 function loadNotes() {
-  if (props.initialNotes && props.initialNotes.length > 0) {
-    notes.value = [...props.initialNotes];
-  } else if (typeof window !== 'undefined') {
-    // const saved = localStorage.getItem('notes'); 
-    // if (saved) notes.value = JSON.parse(saved);
-  }
+  const arrayNotes = Object.entries(props.initialNotes);
+  const notesParsedWithKey = arrayNotes.map(([key, value]) => ({ key, ...value }));
+  notes.value = notesParsedWithKey;
 }
 
-// Save notes to localStorage
-function saveNotes() {
-  if (typeof window !== 'undefined') {
-    // localStorage.setItem('notes', JSON.stringify(notes.value));
+// Save notes - this will now handle saving a single edited note or the entire list
+async function saveNotes(updatedNote, newNoteKey) {
+
+  if (Array.isArray(updatedNote)) {
+    const dataPath = `tabs.${tabKey.value}.value`; // path to the field you want to sync
+
+    emit('update-note', { dataPath, updatedData: updatedNote });
+  } else if (updatedNote && updatedNote.id) { 
+    if (isCreatingNote.value){ 
+      //CREATE A NEW NOTE
+      const dataPath = `tabs.${tabKey.value}.value.${updatedNote.key || newNoteKey}`;
+ 
+     emit('update-note', { dataPath, updatedData: updatedNote });  
+    }else{ 
+      //EDITING ONE NOTE
+      const dataPath = `tabs.${tabKey.value}.value.${updatedNote.key || newNoteKey}`; 
+
+      if (!(updatedNote.key || newNoteKey)) {
+        console.error("Missing note key");
+        return;
+      }
+     emit('update-note', { dataPath, updatedData: updatedNote });  
+    }
   }
 }
 
@@ -189,11 +234,35 @@ function startCreatingNote() {
   newNote.value = createEmptyNote();
 }
 
-// Save a new note
-function saveNewNote() {
-  notes.value.unshift({ ...newNote.value });
-  saveNotes();
-  resetNewNote();
+const generateUniqueNoteId = () => {
+  const existingKeys = new Set(Object.keys(props.initialNotes || {}));
+  notes.value.forEach(note => {
+    if (note.key) {
+      existingKeys.add(note.key);
+    }
+  });
+  let newNoteId;
+  let counter = existingKeys.size + 1; // Start with a likely unique number
+
+  while (true) {
+    newNoteId = `noteItem_${counter}`;
+    if (!existingKeys.has(newNoteId)) {
+      break; // Found a unique ID
+    }
+    counter++; // Try the next number
+  }
+  return newNoteId;
+};
+
+
+
+async function saveNewNote() {  
+  const newNoteId = generateUniqueNoteId();
+  const updatedNotesObject = { ...newNote.value };  
+
+await saveNotes(updatedNotesObject, newNoteId); 
+notes.value.unshift({ key: newNoteId, ...newNote.value }); 
+resetNewNote(); 
 }
 
 // Reset the new note input
@@ -214,7 +283,8 @@ function toggleNewNoteType() {
 
 // Handle checklist changes
 function handleNewChecklistChange(data) {
-  newNote.value.items = data.items;
+  newNote.value.title = data.title;
+  newNote.value.items = data.items;  
 }
 
 function updateChecklistTitle(newTitle) {
@@ -228,13 +298,38 @@ const toggleMenu = (id) => {
   openMenuId.value = openMenuId.value === id ? null : id;
 };
 
-const deleteNote = (index) => {
-  notes.value.splice(index, 1);
+const deleteNote = async (noteKeyToDelete) => { 
+  const updatedNotesObject = { ...props.initialNotes };
+  delete updatedNotesObject[noteKeyToDelete];
+  await saveNotes(updatedNotesObject);
+  notes.value = notes.value.filter(note => note.key !== noteKeyToDelete);
+  updateNotePositions();
 };
 
-const duplicateNote = (index) => {
-  const newNote = { ...notes.value[index], id: uuidv4() };
-  notes.value.push(newNote);
+const duplicateNote = async (originalNote) => {
+  if (!userId || !props.travelPlanId || !props.tabKey) {
+    console.error("Missing user ID, travel plan ID, or tab key");
+    return;
+  }
+
+  const newNoteId = `note_${Object.keys(props.initialNotes || {}).length + notes.value.length + 1}`;
+  const newNoteData = { ...originalNote, id: uuidv4() }; // Generate a new ID for the duplicate
+
+  const updatedNotesObject = {
+    ...props.initialNotes,
+    [newNoteId]: { ...newNoteData, position: notes.value.length }
+  };
+
+  await saveNotes(updatedNotesObject);
+  notes.value.push({ key: newNoteId, ...newNoteData, position: notes.value.length -1 });
+  updateNotePositions();
+};
+
+const updateNotePositions = () => {
+  notes.value.forEach((note, index) => {
+    note.position = index;
+  });
+  saveNotes(notes.value);
 };
 
 // === Modal Edit Handlers ===
@@ -246,38 +341,45 @@ function openEditModal(note) {
 }
 
 // Save edits
-function saveEditedNote() {
-  const index = notes.value.findIndex(n => n.id === activeNote.value.id);
-  if (index !== -1) {
-    notes.value[index] = { ...activeNote.value };
-    saveNotes();
+async function saveEditedNote() {
+  if (activeNote.value) {
+    await saveNotes(activeNote.value, activeNote.value.key);
+    const index = notes.value.findIndex(n => n.key === activeNote.value.key);
+
+    if (index !== -1) {
+      notes.value[index] = { ...activeNote.value };
+    }
+    closeModal();
+    editingNoteId.value = null;
   }
-  closeModal();
 }
 
 // Close modal
 function closeModal() {
   showModal.value = false;
   activeNote.value = null;
+  editingNoteId.value = null;
 }
 
 // Handle checklist change in modal
-function handleEditChecklistChange(data) {
-  activeNote.value.title = data.title;
-  activeNote.value.items = data.items;
+function handleEditChecklistChange(newData) {
+  if (activeNote.value) {
+    //UPDATING CHECKLIST IN NOTE POPUP
+    activeNote.value.title = newData.title;
+    activeNote.value.items = newData.items; 
+    //console.log('noteFromListToUpdate',JSON.parse(JSON.stringify(noteFromListToUpdate)))
+  }
+
+  // //UPDATING EDITED NOTE IN LIST OF NOTES IN TAB
+  // const noteFromListToUpdate = notes.value.find(note => note.id === newData.id);
+  // if (noteFromListToUpdate){ 
+  // //  console.log('noteFromListToUpdate',JSON.parse(JSON.stringify(noteFromListToUpdate)))
+  //   noteFromListToUpdate.title = newData.title;
+  //   noteFromListToUpdate.items = newData.items;
+  // }
+
+  // const dataPath = `tabs.${tabKey.value}.value.${newData.key}`;  
+  // emit('update-note', { dataPath, updatedData: newData });
 }
 
 </script>
-
-<style scoped>
-.notes-container {
-  font-family: sans-serif;
-  background-color: #f7f9fc;
-  min-height: 100vh;
-}
-
-.note-card {
-  cursor: pointer;
-  padding: 1rem;
-}
-</style>

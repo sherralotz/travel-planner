@@ -43,19 +43,25 @@
           <FontAwesomeIcon :icon="faPlus" class="me-1" />
         </button>
           </div>
-        </div>
-
+        </div> 
         <div class="bg-white flex-grow relative z-10 ">
           <div v-for="(tab, index) in tabs" :key="`content-${index}`">
             <div v-show="activeTabIndex === index" class="h-full">
               <template v-if="tab.type === 'table'">
-                <Grid :initialHeaders="tab.value.headers" :initialData="tab.value.tableData" />
+                <Grid :initialHeaders="tab.value.headers" :initialData="tab.value.tableData"
+                :tabKey="tab.key" 
+                @update:data="handleUpdatePlanItem" />
               </template>
-              <template v-else-if="tab.type === 'checklist'">
-                <Checklist :initialItems="tab.value.items" :initialTitle="tab.value.title" />
+              <template v-else-if="tab.type === 'checklist'"> 
+                <Checklist :initialItems="tab.value.items" 
+                :initialTitle="tab.value.title" :travelPlanId="travelPlanId" 
+                :tabKey="tab.key" 
+                @update-checklist="handleUpdatePlanItem" />
               </template>
-              <template v-else-if="tab.type === 'notes'">
-                <Notes :initialNotes="tab.value.notesList" />
+              <template v-else-if="tab.type === 'notes'"> 
+                <Notes :initialNotes="tab.value" :tabKey="tab.key" 
+                @update-note="handleUpdatePlanItem"
+                />
               </template>
             </div>
           </div>
@@ -125,20 +131,29 @@ import Notes from './variants/Notes.vue';
 import Grid from './variants/Grid.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faPlus, faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import useDataUpdater from '@/composables/useDataUpdater';
 
 const route = useRoute();
 const router = useRouter(); // Get the router instance
 const currentUser = inject('currentUser');
+const userId = currentUser.value.uid;
 const travelPlanId = ref(route.params.travelPlanId);
 const travelPlan = ref(null);
 const loading = ref(true);
-const error = ref(null);
+// const error = ref(null);
 
 const activeTabIndex = ref(0);
 const editingTabIndex = ref(null);
 const editingTabName = ref('');
 const editTabInputs = ref([]); // Array to hold input refs
 const showVariantSubMenu = ref(false);
+const {
+  data,
+  updateData,
+  isLoading,
+  error,
+  unsubscribe
+} = useDataUpdater({ userId, travelPlanId });
 
 const dropdown = reactive({
   visible: false,
@@ -175,9 +190,15 @@ const defaultTableData = ref([
 ]);
 // =========== MAIN FUNCTIONS START =============
 
-const tabs = computed(() => {
-  if (travelPlan.value && travelPlan.value.tabs) {
-    return Object.values(travelPlan.value.tabs).sort((a, b) => a.tabPosition - b.tabPosition);
+const tabs = computed(() => { 
+
+  if (travelPlan.value && travelPlan.value.tabs) {  
+    const tabsArray = Object.entries(travelPlan.value.tabs); 
+    // Sort the array based on the tabPosition in the value
+    tabsArray.sort(([, a], [, b]) => a.tabPosition - b.tabPosition); 
+    // Now, map this array to an array of objects, where each object has the key and the value
+    const tabsParsedWithKey =  tabsArray.map(([key, value]) => ({ key, ...value })); 
+    return tabsParsedWithKey;
   }
   return [];
 });
@@ -195,13 +216,13 @@ onMounted(async () => {
       return;
     }
  
-    console.log(`user: ${userId}`)
+    // console.log(`user: ${userId}`)
     const docRef = doc(db, `users/${userId}/travelPlans`, travelPlanId.value);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
       travelPlan.value = { id: docSnap.id, ...docSnap.data() };
-      console.log('plan:', JSON.parse(JSON.stringify(travelPlan.value)))
+     console.log('PLAN:', JSON.parse(JSON.stringify(travelPlan.value)))
     } else {
       error.value = 'Travel plan not found.';
     }
@@ -247,6 +268,10 @@ const toggleVariantSubMenu = (event) => {
   if (event) event.stopPropagation();
   showVariantSubMenu.value = !showVariantSubMenu.value;
 };
+
+function handleUpdatePlanItem({ dataPath, updatedData }) { 
+  updateData(updatedData, dataPath);
+}
 
 
 // =========== MAIN FUNCTIONS END =============
@@ -298,7 +323,6 @@ const toggleTabMenu = (index, event) => {
 const startEditingTab = (index) => {
   if (index !== null) {
     editingTabIndex.value = index; 
-    console.log('editingTabIndex', index)
     editingTabName.value = tabs.value[index].title;
     dropdown.visible = false; 
 
@@ -352,9 +376,7 @@ const addNewTab = (type = 'table') => {
       break;
     case 'notes':
       newTitle = 'New Notes';
-      newValue = {
-        notesList: [],
-      };
+      newValue = [];
       break;
     default:
       console.error(`Unknown tab type: ${type}`);
