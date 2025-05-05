@@ -4,7 +4,7 @@
       <h2
         v-if="!isEditingTitle"
         @click="startEditingTitle"
-        class="text-xl font-semibold cursor-text truncate"
+        class="text-xl font-semibold cursor-text truncate "
         :class="{'text-gray-400': !title}"
       >
         {{ title || 'Title' }}
@@ -16,7 +16,7 @@
         @keyup.enter="finishEditingTitle"
         @blur="finishEditingTitle"
         @keyup.esc="cancelEditingTitle"
-        class="text-xl font-semibold w-full rounded-md border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-1"
+        class="text-xl font-semibold w-full rounded-md border-gray-300 focus:outline-none p-1"
 
         v-focus
       />
@@ -46,6 +46,7 @@
             v-if="!editingItem || editingItem.id !== item.id"
             @click="startEditing(item)"
             class="flex-grow cursor-text"
+              :class="{'text-gray-400': !item.text }"
           >{{ item.text || 'New item' }}</span>
           <input
             v-else
@@ -54,7 +55,7 @@
             @keyup.enter="finishEditingAndCreateNew(index)"
             @blur="finishEditing"
             @keyup.esc="cancelEditing"
-            class="flex-grow rounded-md border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-1"
+            class="flex-grow rounded-md border-gray-300 focus:outline-none p-1"
             v-focus
           />
         </div>
@@ -293,7 +294,6 @@ watch(
 
 // Title editing functions
 const startEditingTitle = () => {
-  console.log('props:', JSON.parse(JSON.stringify(props)))
   titleText.value = title.value;
   isEditingTitle.value = true;
 };

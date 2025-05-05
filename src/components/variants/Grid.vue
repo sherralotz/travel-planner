@@ -4,7 +4,7 @@
       <h2 class="text-xl font-bold"> </h2>
 
       <div class="flex  overflow-hidden text-sm ">
-        <button @click="viewMode = 'grid'" :class="[
+        <button @click="changeViewMode('grid')" :class="[
           'px-2 py-1 flex items-center w-16 justify-center transition-colors h-7 ',
           viewMode === 'grid'
             ? 'bg-red-500 text-white border border-red-700  rounded-tl-lg rounded-bl-lg'
@@ -13,11 +13,11 @@
           <FontAwesomeIcon :icon="faTable" class="me-1" />
           Grid
         </button>
-        <button @click="viewMode = 'list'" :class="[
+        <button @click="changeViewMode('list')" :class="[
           'px-4 py-2 flex items-center w-16 justify-center transition-colors h-7',
           viewMode === 'list'
             ? 'bg-red-500 text-white border border-red-700 rounded-tr-lg rounded-br-lg'
-            : 'bg-gray-100 hover:bg-gray-200 border-gray-400 rounded-tr-lg rounded-br-lg',
+            : 'bg-gray-100 hover:bg-gray-200 border border-gray-400 rounded-tr-lg rounded-br-lg',
         ]">
           <FontAwesomeIcon :icon="faListUl" class="me-1" />
           List
@@ -62,6 +62,7 @@
                             @blur="updateCell(rowIndex, columnIndex, $event)"
                             @keydown="handleKeyDown($event, rowIndex, columnIndex)"
                             :ref="(el) => setCellRef(el, rowIndex, columnIndex)"
+                            @paste="handlePaste($event, rowIndex, columnIndex)"
                             :class="{'font-bold':row.type === 'title', 'text-right':row.type !== 'title'}"> 
                             <!-- COLUMN: DATE  -->
                             {{ cell.value }} 
@@ -76,26 +77,28 @@
                             class="outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1 h-full w-full px-2 min-h-10"
                             @blur="updateCell(rowIndex, columnIndex, $event)"
                             @keydown="handleKeyDown($event, rowIndex, columnIndex)"
-                            :ref="(el) => setCellRef(el, rowIndex, columnIndex)">
-                          
+                            :ref="(el) => setCellRef(el, rowIndex, columnIndex)"> 
                                {{ cell.value }}  
                           </div>
                           </div>
                         </template>
 
                          <!------------------------ COLUMN: NOTES --------------------------->
-                         <template v-else-if="(cell.cellType === 'note' )">
+                         <template v-else-if="(cell.cellType === 'note' )"> 
                           <div class="item-container"> 
                             <div contenteditable="true"
-                              class="outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1  min-h-10 w-full"
+                              class="test outline-none focus:ring-1 focus:ring-gray-300 p-1 flex flex-col gap-1 w-full "
                               @blur="updateCell(rowIndex, columnIndex, $event)"
                               @keydown="handleKeyDown($event, rowIndex, columnIndex)"
-                              :ref="(el) => setCellRef(el, rowIndex, columnIndex)">
-                              <!-- COLUMN: NOTES | ROW: TITLE -->
-                               <template v-if="cell.value"> {{ cell.value.text }}</template> 
+                              :ref="(el) => setCellRef(el, rowIndex, columnIndex)"
+                              :class="{'min-h-[10px]': typeof cell.value === 'object' && cell.value.links.length > 0, 'min-h-10': (typeof cell.value === 'string' || (typeof cell.value === 'object' && cell.value.links.length === 0))}"
+                              >
+                              <!-- COLUMN: NOTES | ROW: TITLE --> 
+                                {{ cell.value?.text }} 
                             </div>
                           </div>
-                          <div class="m-1" v-if="cell.value && cell.value.links">
+
+                          <div class="m-1" v-if="cell.value && cell.value.links"> 
                             <template v-for="(linkItem, linkIndex) in cell.value.links" :key="linkIndex">
                               <span class="bg-gray-300 px-2 py-1 me-1 w-full rounded-xl text-[11px] ">
                                 <a :href="linkItem.url" target="_blank" rel="noopener noreferrer"
@@ -257,8 +260,7 @@ const openLinkModal = (clickedRowIndex) => {
 };
 
 const emitChange = (newData) => {  
-   const dataPath = `tabs.${props.tabKey}.value.tableData`; 
-   console.log('Changed:', JSON.parse(JSON.stringify(newData)), dataPath)  
+   const dataPath = `tabs.${props.tabKey}.value.tableData`;  
    emit('update:data', { dataPath, updatedData: newData }); 
 };
 
@@ -309,9 +311,10 @@ const handleResize = () => {
  
 // Function to update cell data when edited
 const updateCell = (rowIndex, columnIndex, event) => {
+  console.log('updateCell', columnIndex)
   // Get the new value from the contenteditable element
   const newValue = event.target.textContent.trim();
-  
+  console.log('newValue', newValue)
   // Create a copy of the current data to maintain reactivity
   const newTableData = [...tabData.value];
   const row = newTableData[rowIndex];
@@ -319,16 +322,19 @@ const updateCell = (rowIndex, columnIndex, event) => {
   // Handle different row types (title row vs regular row)
   if (row.type === 'title') {
     // Update title row
-    row.value[columnIndex].value = newValue;
+    row.value[columnIndex].value = newValue; 
   } else {
+    console.log('hello', columnIndex)
     // For regular rows, check if we need to update specific cellType properties
     if (columnIndex === 2) { // Notes column
       // If the cell has a link structure
-      if (typeof row.value[columnIndex].value === 'object' && row.value[columnIndex].value !== null) {
+      if (typeof row.value[columnIndex].value === "string" && row.value[columnIndex].value.trim().length === 0){
+        //RESET
+        row.value[columnIndex].value = {};
         row.value[columnIndex].value.text = newValue;
-      } else {
-        // If it's just a string value
-        row.value[columnIndex].value = newValue;
+        row.value[columnIndex].value.links = [];  
+      } else if (typeof row.value[columnIndex].value === "object"){
+        row.value[columnIndex].value.text = newValue; 
       }
     } else {
       // For regular cells
@@ -338,6 +344,23 @@ const updateCell = (rowIndex, columnIndex, event) => {
   
   // Update the reference to trigger reactivity
   tabData.value = newTableData;
+};
+
+const handlePaste = (event, rowIndex, columnIndex) => {
+  event.preventDefault();
+  const text = (event.clipboardData || window.clipboardData).getData('text');
+
+  // Create a synthetic event object that mimics the structure
+  // expected by your updateCell function (specifically, the 'target' property
+  // with a 'textContent' property).
+  const syntheticEvent = {
+    target: {
+      textContent: text,
+    },
+  };
+
+  // Call the existing updateCell function with the synthetic event
+  updateCell(rowIndex, columnIndex, syntheticEvent);
 };
 
 // Function to add a new default row at the specified index
@@ -449,17 +472,12 @@ const deleteRow = (index) => {
 
 const toggleRowType = (rowIndex) => {
   const newTableData = [...tabData.value];
-  const currentRow = newTableData[rowIndex];
+  const currentRow = newTableData[rowIndex]; 
 
    if (currentRow.type === 'title') {
-    const newRow = currentRow.value.map(cell => cell.value);
-    newTableData[rowIndex] = newRow;
-  } else {
-     const newTitleRow = {
-      type: 'title',
-      value: currentRow.map(cell => ({ cellType: 'default', value: cell })),
-    };
-    newTableData[rowIndex] = newTitleRow;
+    currentRow.type = 'default'; 
+  } else { 
+    currentRow.type = 'title'; 
   }
 
   tabData.value = newTableData;
@@ -560,7 +578,8 @@ const isMapsLink = (value) => {
 
 const saveLinkToNotes = (linkData) => {  
   if (currentLinkRowIndex.value !== null) {
-    const linkText = `[${linkData.label}](${linkData.url})`;
+    // const linkText = `[${linkData.label}](${linkData.url})`;
+    const linkObject = {label: linkData.label, url: linkData.url}
     const rowIndex = currentLinkRowIndex.value;
     const notesColumnIndex = headers.value.findIndex(
       (header) => header.value === 'Notes'
@@ -570,7 +589,17 @@ const saveLinkToNotes = (linkData) => {
       const newTableData = [...tabData.value];  
       if (newTableData[rowIndex].value.length){
         const notesColumn = newTableData[rowIndex].value[2];
-        notesColumn.push({cellType: "link", value:linkText });
+        console.log('typeof', typeof notesColumn.value) 
+        if (typeof notesColumn.value === 'string' && notesColumn.value.trim().length === 0){
+          notesColumn.value = {};
+          notesColumn.value.text = ""; 
+          notesColumn.value.links = [linkObject]; 
+          console.log('notesColumn', notesColumn.value) 
+        } else if (typeof notesColumn.value === "object" && (typeof notesColumn.value.links === "object" || typeof notesColumn.value.links === "array") ){ 
+          console.log('links typeof', typeof notesColumn.value.links) 
+          notesColumn.value.links.push(linkObject); 
+        } 
+        
       } 
     } else {
       console.warn('The "Notes" column was not found.');
@@ -579,6 +608,11 @@ const saveLinkToNotes = (linkData) => {
   }
   isLinkModalVisible.value = false;
 };
+
+const changeViewMode = (type) =>{
+  viewMode.value = type;
+  handleClickOutside();
+}
 
 // Initialize with default data if empty
 onMounted(() => {

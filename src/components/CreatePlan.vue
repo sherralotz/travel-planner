@@ -1,7 +1,7 @@
 <template>
   <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 max-w-2xl mx-auto">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-indigo-700">Create Your Travel Plan</h2>
+    <div class="flex items-center justify-between">
+      <!-- <h2 class="text-2xl font-bold text-indigo-700">Create Your Travel Plan</h2> -->
       <button 
         type="button" 
         @click="$emit('close')"
@@ -11,21 +11,101 @@
       </button>
     </div>
 
-    <form @submit.prevent="createTravelPlan" class="space-y-6">
+    <form @submit.prevent="createTravelPlan" class="space-y-3">
       <div>
-        <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Plan Title:</label>
+        <label for="title" class="block font-bold text-md text-gray-700 mb-1">Plan Title:</label>
         <input 
           type="text" 
           id="title" 
           v-model="title" 
           required 
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
           placeholder="e.g., Summer Europe Trip 2025"
         />
       </div>
 
-      <div class="bg-indigo-50 rounded-lg p-4">
-        <h3 class="text-lg font-medium text-indigo-800 mb-3">Include in your plan:</h3>
+      <!-- Trip Duration Section -->
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="text-md font-bold text-gray-700 mb-3">Trip Duration:</h3>
+        
+        <div class="space-y-3">
+          <div class="flex items-center gap-3">
+            <input 
+              type="radio" 
+              id="numDays" 
+              value="numDays"
+              v-model="durationOption"
+              class="w-5 h-5 text-red-500 border-gray-300 focus:ring-red-500" 
+            />
+            <label for="numDays" class="flex items-center gap-2 text-gray-700">
+              <FontAwesomeIcon :icon="faHashtag" class="text-red-500" /> 
+              Number of Days
+            </label>
+          </div>
+          
+          <!-- Number of Days Input start-->
+          <div v-if="durationOption === 'numDays'" class="ml-8">
+            <div class="w-1/2">
+              <label for="numberOfDays" class="block text-sm text-gray-600 mb-1">Number of Days:</label>
+              <input 
+                type="number" 
+                id="numberOfDays" 
+                v-model="numberOfDays" 
+                min="1"
+                max="30"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+          </div>
+          <!-- Number of Days Input end-->
+
+          <div class="flex items-center gap-3">
+            <input 
+              type="radio" 
+              id="dateRange" 
+              value="dateRange"
+              v-model="durationOption"
+              class="w-5 h-5 text-red-500 border-gray-300 focus:ring-red-500" 
+            />
+            <label for="dateRange" class="flex items-center gap-2 text-gray-700">
+              <FontAwesomeIcon :icon="faCalendarDays" class="text-red-500" /> 
+              Date Range
+            </label>
+          </div>
+          
+          <!-- Date Range Inputs start-->
+          <div v-if="durationOption === 'dateRange'" class="ml-8 space-y-2">
+            <div class="flex gap-3">
+              <div class="w-1/2">
+                <label for="startDate" class="block text-sm text-gray-600 mb-1">Start Date:</label>
+                <input 
+                  type="date" 
+                  id="startDate" 
+                  v-model="startDate" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+              <div class="w-1/2">
+                <label for="endDate" class="block text-sm text-gray-600 mb-1">End Date:</label>
+                <input 
+                  type="date" 
+                  id="endDate" 
+                  v-model="endDate" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                />
+              </div>
+            </div>
+          </div>
+          <!-- Date Range Inputs end-->
+          
+      
+
+
+        </div>
+      </div>
+
+      <div class="bg-gray-50 rounded-lg p-4">
+        <h3 class="text-md font-bold text-gray-700 mb-3">Include in your plan:</h3>
         
         <div class="space-y-3">
           <div class="flex items-center gap-3">
@@ -36,7 +116,7 @@
               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
             />
             <label for="itinerary" class="flex items-center gap-2 text-gray-700">
-              <span class="i-lucide-calendar w-5 h-5 text-indigo-500"></span>
+              <FontAwesomeIcon :icon="faCalendarWeek"  class="text-red-500" /> 
               Itinerary (Table)
             </label>
           </div>
@@ -49,7 +129,8 @@
               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
             />
             <label for="notes" class="flex items-center gap-2 text-gray-700">
-              <span class="i-lucide-file-text w-5 h-5 text-indigo-500"></span>
+             
+              <FontAwesomeIcon :icon="faNoteSticky"  class="text-red-500" /> 
               Notes
             </label>
           </div>
@@ -62,41 +143,27 @@
               class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
             />
             <label for="thingsToBring" class="flex items-center gap-2 text-gray-700">
-              <span class="i-lucide-luggage w-5 h-5 text-indigo-500"></span>
+            
+              <FontAwesomeIcon :icon="faSuitcaseRolling" class="text-red-500"  /> 
               Things to Bring (Checklist)
             </label>
-          </div>
-          
-          <div class="flex items-center gap-3">
-            <input 
-              type="checkbox" 
-              id="thingsToDo" 
-              v-model="includeThingsToDo"
-              class="w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500" 
-            />
-            <label for="thingsToDo" class="flex items-center gap-2 text-gray-700">
-              <span class="i-lucide-list-checks w-5 h-5 text-indigo-500"></span>
-              Things to Do (Checklist)
-            </label>
-          </div>
+          </div> 
         </div>
       </div>
 
-      <div class="flex gap-4 justify-end pt-4">
+      <div class="flex gap-2 justify-end pt-4">
+        <button 
+          type="submit"
+          class="px-5 py-2 bg-red-500 hover:bg-red-400 text-white font-medium rounded-lg  transition-colors  flex items-center"
+        >
+          Save
+        </button>
         <button 
           type="button" 
           @click="$emit('close')"
           class="px-5 py-2 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
         >
           Cancel
-        </button>
-        
-        <button 
-          type="submit"
-          class="px-5 py-2 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors shadow-md flex items-center gap-2"
-        >
-          <span class="i-lucide-save w-5 h-5"></span>
-          Create Plan
         </button>
       </div>
     </form>
@@ -109,14 +176,153 @@ import { db } from '@/config/firebase-config';
 import { collection, addDoc } from 'firebase/firestore';
 import { useRouter } from 'vue-router';
 import { v4 as uuidv4 } from 'uuid';
- 
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { 
+  faSuitcaseRolling, 
+  faListCheck, 
+  faCalendarWeek, 
+  faNoteSticky,
+  faCalendarDays,
+  faHashtag
+} from '@fortawesome/free-solid-svg-icons';
+
 const currentUser = inject('currentUser');
 const title = ref('');
-const includeItinerary = ref(false);
-const includeNotes = ref(false);
-const includeThingsToBring = ref(false);
-const includeThingsToDo = ref(false);
+const includeItinerary = ref(true);
+const includeNotes = ref(true);
+const includeThingsToBring = ref(true); 
 const router = useRouter();
+
+// Trip duration options
+const durationOption = ref('numDays'); // Default option
+const startDate = ref('');
+const endDate = ref('');
+const numberOfDays = ref(3); // Default number of days
+
+// Function to format date as "Day, Month DD" (e.g., "Mon, Jan 22")
+function formatDate(date) {
+  const options = { weekday: 'short', month: 'short', day: 'numeric' };
+  return new Date(date).toLocaleDateString('en-US', options);
+}
+
+// Function to generate table rows based on date range
+function generateDateRangeRows(startDateStr, endDateStr) {
+  const tableData = [];
+  const start = new Date(startDateStr);
+  const end = new Date(endDateStr);
+  
+  // Validate dates
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || start > end) {
+    alert('Please enter a valid date range.'); 
+    return ;
+  }
+  
+  // Loop through each day in the range
+  let currentDate = new Date(start);
+  while (currentDate <= end) {
+    // Add title row for the day
+    tableData.push({
+      "type": "title",
+      "value": [
+        {
+          "cellType": "date",
+          "value": formatDate(currentDate)
+        },
+        {
+          "cellType": "default",
+          "value": ""
+        },
+        {
+          "cellType": "note",
+          "value": ""
+        }
+      ]
+    });
+    
+    // Add three default rows for each day
+    for (let i = 0; i < 3; i++) {
+      tableData.push({
+        "type": "default",
+        "value": [
+          {
+            "cellType": "date",
+            "value": ""
+          },
+          {
+            "cellType": "default",
+            "value": ""
+          },
+          {
+            "cellType": "note",
+            "value": ""
+          }
+        ]
+      });
+    }
+    
+    // Move to next day
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return tableData;
+}
+
+// Function to generate table rows based on number of days
+function generateNumberOfDaysRows(days) {
+  const tableData = [];
+  
+  // Validate number of days
+  const numDays = parseInt(days);
+  if (isNaN(numDays) || numDays < 1 || numDays > 30) {
+    alert('Please enter a valid number of days (1-30).');
+    return tableData;
+  }
+  
+  // Create rows for each day
+  for (let day = 1; day <= numDays; day++) {
+    // Add title row for the day
+    tableData.push({
+      "type": "title",
+      "value": [
+        {
+          "cellType": "date",
+          "value": `Day ${day}`
+        },
+        {
+          "cellType": "default",
+          "value": ""
+        },
+        {
+          "cellType": "note",
+          "value": ""
+        }
+      ]
+    });
+    
+    // Add three default rows for each day
+    for (let i = 0; i < 3; i++) {
+      tableData.push({
+        "type": "default",
+        "value": [
+          {
+            "cellType": "date",
+            "value": ""
+          },
+          {
+            "cellType": "default",
+            "value": ""
+          },
+          {
+            "cellType": "note",
+            "value": ""
+          }
+        ]
+      });
+    }
+  }
+  
+  return tableData;
+}
 
 async function createTravelPlan() {
   if (!title.value) {
@@ -129,114 +335,55 @@ async function createTravelPlan() {
     return;
   }
 
+  // Validate duration inputs
+  if (durationOption.value === 'dateRange' && (!startDate.value || !endDate.value)) {
+    alert('Please select both start and end dates.');
+    return;
+  }
+  
+  if (durationOption.value === 'numDays' && (!numberOfDays.value || numberOfDays.value < 1)) {
+    alert('Please enter a valid number of days.');
+    return;
+  }
+
   const tabsData = {};
   let tabPositionCounter = 1;
 
   if (includeItinerary.value) {
+    // Generate table data based on user's selection
+    let tableData = [];
+    
+    if (durationOption.value === 'dateRange') {
+      tableData = generateDateRangeRows(startDate.value, endDate.value);
+    } else if (durationOption.value === 'numDays') {
+      tableData = generateNumberOfDaysRows(numberOfDays.value);
+    }
+    
     tabsData['table_1'] = { 
       tabPosition: tabPositionCounter++,
       tabId: uuidv4(),
       title: 'Itinerary',
       type: 'table',
-      value: { headers: [{
-                    position: 1,
-                    type: "date",
-                    value: "Date"
-                },
-                {
-                    position: 2,
-                    type: "text",
-                    value: "Activity"
-                },
-                {
-                    position: 3,
-                    type: "notes",
-                    value: "Notes"
-                }],
-                tableData:[
-                    {
-                        "type": "title",
-                        "value": [
-                            
-                                {
-                                    "cellType": "date",
-                                    "value": "Mon, Jan 22"
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "default",
-                                    "value": ""
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "note",
-                                    "value": ""
-                                }
-                            
-                        ], 
-                    },
-                    {
-                        "type": "default",
-                        "value": [
-                            
-                                {
-                                    "cellType": "date",
-                                    "value": "8:00 AM"
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "default",
-                                    "value": "Breakfast"
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "note",
-                                    "value": ""
-                                }
-                            
-                        ], 
-                    },
-                    {
-                        "type": "default",
-                        "value": [
-                            
-                                {
-                                    "cellType": "date",
-                                    "value": "9:00 AM"
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "default",
-                                    "value": "Explore"
-                                }
-                            ,
-                            
-                                {
-                                    "cellType": "note",
-                                    "value": {
-                                        text: "",
-                                        links: [
-                                            {
-                                                "label": "Hotel California",
-                                                "url": "https://maps.app.goo.gl/xdvwc5kk9BQ48tge7"
-                                            },
-                                            {
-                                                "label": "Tiktok",
-                                                "url": "https://vt.tiktok.com/ZShYfhXJF/"
-                                            }
-                                        ] 
-                                    }
-                                }, 
-                            
-                        ]
-                    } 
-                ]
-              },
+      value: { 
+        headers: [
+          {
+            position: 1,
+            type: "date",
+            value: "Date"
+          },
+          {
+            position: 2,
+            type: "text",
+            value: "Activity"
+          },
+          {
+            position: 3,
+            type: "notes",
+            value: "Notes"
+          }
+        ],
+        tableData: tableData
+      },
     };
   }
 
@@ -246,27 +393,7 @@ async function createTravelPlan() {
       tabId: uuidv4(),
       title: 'Notes',
       type: 'notes',
-      value: {  
-        "noteItem_1":{ 
-            id: uuidv4(), 
-            title: "NoteCheck title",  
-            isChecklist: true,
-            items: [
-                { id: uuidv4(), text: 'NoteCheck 1', completed: false },
-                { id: uuidv4(), text: 'NoteCheck 2', completed: false }
-            ],
-            content: "",
-            timestamp: new Date().toISOString()
-        },
-        "noteItem_2":{
-            id: uuidv4(), 
-            title: "Title goes here!",  
-            isChecklist: false,
-            items: [],
-            content: "Hello world!",
-            timestamp: new Date().toISOString()
-        } 
-      }
+      value: null
     };
   }
 
@@ -276,28 +403,10 @@ async function createTravelPlan() {
       tabId: uuidv4(),
       title: 'Things to Bring',
       type: 'checklist',
-      value: { title: "",  
-                items: [
-                    { id: uuidv4(), text: 'Bag', completed: false },
-                    { id: uuidv4(), text: 'Tissue', completed: false },
-                    { id: uuidv4(), text: 'First aid kit', completed: false }
-                ] },
+      value: null,
     };
   }
-
-  if (includeThingsToDo.value) {
-    tabsData['checklist_2'] = { 
-      tabPosition: tabPositionCounter++,
-      tabId: uuidv4(),
-      title: 'Things to Do',
-      type: 'checklist',
-      value: { title: 'Priorities', items: [ 
-        { id: uuidv4(), text: 'Check packing list', completed: false },
-        { id: uuidv4(), text: 'Pack', completed: false }
-        ] },
-    };
-  }
-
+  
   const travelPlanObj = {
     title: title.value,
     tabs: tabsData,
@@ -307,7 +416,6 @@ async function createTravelPlan() {
 
   try {
     const docRef = await addDoc(collection(db, `users/${currentUser.value.uid}/travelPlans`), travelPlanObj);
-    //console.log('Travel Plan created with ID: ', docRef.id);
     emit('planCreated'); // Emit the event for PlansList to refetch
     emit('close'); // Emit the close event
     router.push(`/plan/${docRef.id}`);

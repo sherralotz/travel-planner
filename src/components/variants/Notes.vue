@@ -13,7 +13,7 @@
 
         <div v-if="!newNote.isChecklist">
           <textarea v-model="newNote.content" placeholder="Take a note..."
-            class="w-full h-20 border-0 resize-none focus:outline-none"></textarea>
+            class="w-full min-h-15 h-auto border-0 resize-auto focus:outline-none"></textarea>
         </div>
 
         <div v-else>
@@ -24,10 +24,10 @@
 
         <div class="flex justify-between pt-2 border-t border-gray-200 mt-2">
 
-          <button @click="saveNewNote" class="px-3 py-1 rounded bg-blue-100 text-gray-700 text-sm">Save</button>
+          <button @click="saveNewNote" class="px-3 py-1 rounded bg-red-500 hover:bg-red-400 text-white text-sm">Save</button>
           <div>
             <button @click="toggleNewNoteType" class="px-3 py-1 rounded text-sm me-1"
-              :class="newNote.isChecklist ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-gray-700'">
+              :class="newNote.isChecklist ? 'bg-indigo-100 text-indigo-700' : 'bg-green-100 text-gray-700'">
               {{ newNote.isChecklist ? 'Switch to Note' : 'Switch to Checklist' }}
             </button>
             <button @click="closeCreateNote" class="px-3 py-1 rounded bg-gray-100 text-gray-700 text-sm">Close</button>
@@ -37,9 +37,16 @@
     </div>
 
     <div class="overflow-auto h-[calc(100dvh-230px)]">
+      <div v-if="notes.length === 0"  >
+      <div class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300"
+    > 
+      <p class="text-lg text-gray-600">You haven't created any notes.</p> 
+    </div>
+    </div>
+
       <div class="notes-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-3" ref="notesGrid">
         <div v-for="(note, index) in sortedNotes" :key="note.id"
-          class="note-card bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
+          class="note-card overflow-hidden px-3 py-3 bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
           @click="openEditModal(note)">
           <div class="note-menu-container relative w-full">
             <button class="note-menu-button absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none p-2"
@@ -63,36 +70,35 @@
               </button>
             </div>
           </div>
-          <h3 class="text-xl font-semibold text-gray-800">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2">
             {{ note.title }}
           </h3>
 
           <p v-if="!note.isChecklist" class="text-gray-700 whitespace-pre-line">{{ note.content }}</p>
 
           <div v-else> 
-            <ul class="list-disc pl-5 text-gray-700">
-              <li v-for="item in note.items" :key="item.id" class="flex">
-                <div :class=" { 'bg-pink-200': item.completed,'bg-green-200': !item.completed}"> check </div>
-                <div> {{item.text}}</div>
+            <ul class="list-disc pl-2 text-gray-700">
+              <li v-for="item in note.items" :key="item.id" class="flex m-1"> 
+                <div v-if="!item.completed" class="w-5 h-5 bg-green-300 rounded-sm"> 
+                  <FontAwesomeIcon :icon="faCheck" class="text-white ms-0.5"/>
+                 </div>
+                 <div v-if="item.completed" class=" rounded-sm w-5 h-5 bg-gray-200">  
+                 </div>
+                <div class="ms-2"> {{item.text}}</div>
               </li>
             </ul>
           </div>
         </div>
       </div>
-    </div>
-
-    <div v-if="notes.length === 0" class="text-center text-gray-500 mt-8">
-      No notes yet. Add some!
-    </div>
-
+    </div> 
     <Modal v-model="showModal" v-if="activeNote">
       <input v-if="!activeNote?.isChecklist" v-model="activeNote.title"
         type="text"
-        class="w-full border mb-2 p-2 rounded focus:outline-none"
+        class="w-full border border-gray-300 mb-2 p-2 rounded focus:outline-none"
         placeholder="Title" />
 
       <div v-if="!activeNote.isChecklist">
-        <textarea v-model="activeNote.content" class="w-full h-24 border p-2 rounded focus:outline-none"></textarea>
+        <textarea v-model="activeNote.content" class="w-full min-h-50 border border-gray-300 p-2 rounded focus:outline-none"></textarea>
       </div>
 
       <div v-else>
@@ -116,7 +122,7 @@ import Checklist from '../variants/Checklist.vue';
 import Modal from '../common/Modal.vue';
 import Sortable from 'sortablejs';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
+import { faEllipsisVertical, faCheck } from '@fortawesome/free-solid-svg-icons';
 import useDataUpdater from '@/composables/useDataUpdater';
 
 // Props
@@ -197,9 +203,11 @@ function createEmptyNote() {
 
 // Load notes, prioritizing initialNotes prop
 function loadNotes() {
-  const arrayNotes = Object.entries(props.initialNotes);
-  const notesParsedWithKey = arrayNotes.map(([key, value]) => ({ key, ...value }));
-  notes.value = notesParsedWithKey;
+  if (props.initialNotes && Object.keys(props.initialNotes).length > 0){
+    const arrayNotes = Object.entries(props.initialNotes);
+    const notesParsedWithKey = arrayNotes.map(([key, value]) => ({ key, ...value }));
+    notes.value = notesParsedWithKey; 
+  }
 }
 
 // Save notes - this will now handle saving a single edited note or the entire list

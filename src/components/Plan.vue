@@ -1,17 +1,60 @@
 <template>
   <div>
-    <button @click="goHome" class="back-button">Back to Home</button>
-    <h1>Travel Plan Details</h1>
+
     <div v-if="loading">Loading plan details...</div>
     <div v-else-if="error">{{ error }}</div>
     <div v-else-if="travelPlan">
-      <h2>{{ travelPlan.title }}</h2>
+      <div class="flex">
+        <div class="flex w-full">
+          <button @click="goHome"
+            class="my-2 me-2 px-2 py-1 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors">
+            <FontAwesomeIcon :icon="faAngleLeft" />
+          </button>
+
+          <div class="w-full">
+      <h2
+        v-if="!isEditingTitle"
+        @click="startEditingTitle"
+        class="text-lg font-semibold cursor-text truncate mt-2 w-[25%] " 
+      >
+        {{ travelPlan.title  }}
+      </h2>
+      <input
+        v-else
+        type="text" 
+        ref="titleText"
+        @keyup.enter="finishEditingTitle"
+        @blur="finishEditingTitle"
+        @keyup.esc="cancelEditingTitle"
+        class="text-xl font-semibold  w-[25%] rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-1"
+        
+      />
+    </div>
+
+ 
+        </div>
+        <div class="ml-auto">
+          <button
+            class="note-menu-button relative top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none p-2"
+            @click="showPlanMenu = !showPlanMenu">
+            <FontAwesomeIcon :icon="faEllipsisVertical" />
+
+            <!-- Dropdown menu -->
+            <div v-if="showPlanMenu"
+              class="dropdown-container absolute top-7 left-[-115px] mt-1 w-33 bg-white shadow-lg rounded-md border border-gray-200 py-1 z-40">
+            <button @click.stop="deleteTravelPlan()"
+            class="block px-4 w-full text-left text-red-600 hover:bg-gray-100">Delete Plan</button>
+            </div>
+          </button>
+
+
+        </div>
+      </div>
 
       <div class="flex flex-col w-full relative">
         <div class="flex border-b border-gray-200 bg-gray-50 relative ">
           <div class="flex items-center overflow-x-auto flex-grow">
-            <div v-for="(tab, index) in tabs" :key="index"
-              class="flex items-center whitespace-nowrap relative">
+            <div v-for="(tab, index) in tabs" :key="index" class="flex items-center whitespace-nowrap relative">
 
               <div :class="[
                 'flex items-center px-4 pt-1.5 pb-2 border-r text-sm  cursor-pointer rounded-tr-xl rounded-tl-sm',
@@ -21,8 +64,7 @@
               ]" @click="setActiveTab(index)">
                 <div class="flex items-center space-x-2">
                   <div v-if="editingTabIndex === index">
-                    index:{{index}}
-                    <input :ref="(el) => editTabInputs[index] = el"  v-model="editingTabName"
+                    <input :ref="(el) => editTabInputs[index] = el" v-model="editingTabName"
                       class="border px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-red-400 w-24"
                       @blur="saveTabName" @keyup.enter="saveTabName" @keyup.esc="cancelEditingTab" />
                   </div>
@@ -39,29 +81,24 @@
             </div>
 
             <button class="flex items-center justify-center h-9 w-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-          @click="addNewTab('table')">
-          <FontAwesomeIcon :icon="faPlus" class="me-1" />
-        </button>
+              @click="addNewTab('table')">
+              <FontAwesomeIcon :icon="faPlus" class="me-1" />
+            </button>
           </div>
-        </div> 
+        </div>
         <div class="bg-white flex-grow relative z-10 ">
           <div v-for="(tab, index) in tabs" :key="`content-${index}`">
             <div v-show="activeTabIndex === index" class="h-full">
               <template v-if="tab.type === 'table'">
-                <Grid :initialHeaders="tab.value.headers" :initialData="tab.value.tableData"
-                :tabKey="tab.key" 
-                @update:data="handleUpdatePlanItem" />
+                <Grid :initialHeaders="tab.value.headers" :initialData="tab.value.tableData" :tabKey="tab.key"
+                  @update:data="handleUpdatePlanItem" />
               </template>
-              <template v-else-if="tab.type === 'checklist'"> 
-                <Checklist :initialItems="tab.value.items" 
-                :initialTitle="tab.value.title" :travelPlanId="travelPlanId" 
-                :tabKey="tab.key" 
-                @update-checklist="handleUpdatePlanItem" />
+              <template v-else-if="tab.type === 'checklist'">
+                <Checklist :initialItems="tab.value?.items || []" :initialTitle="tab.value?.title || '' "
+                  :travelPlanId="travelPlanId" :tabKey="tab.key" @update-checklist="handleUpdatePlanItem" />
               </template>
-              <template v-else-if="tab.type === 'notes'"> 
-                <Notes :initialNotes="tab.value" :tabKey="tab.key" 
-                @update-note="handleUpdatePlanItem"
-                />
+              <template v-else-if="tab.type === 'notes'">
+                <Notes :initialNotes="tab.value" :tabKey="tab.key" @update-note="handleUpdatePlanItem" />
               </template>
             </div>
           </div>
@@ -69,7 +106,7 @@
 
         <!-- Dropdown menu -->
         <div v-if="dropdown.visible"
-          class="dropdown-container absolute top-0 left-0 mt-1 w-32 bg-white shadow-lg rounded-md border border-gray-200 py-1 z-40"
+          class="dropdown-container absolute top-0 left-0 mt-1 w-33 bg-white shadow-lg rounded-md border border-gray-200 py-1 z-40"
           :style="{
             position: 'fixed',
             top: dropdown.top + 'px',
@@ -80,16 +117,20 @@
             @click.stop="startEditingTab(dropdown.tabIndex)">
             Rename
           </button>
-          <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
+          <!-- <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
             @click.stop="duplicateTab(dropdown.tabIndex)">
             Duplicate
-          </button>
+          </button> -->
 
           <div class="relative">
             <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
               @click.stop="toggleVariantSubMenu">
-              Variant
-              <span class="float-right text-xs">▶</span>
+              Change Type <span>
+                <FontAwesomeIcon :icon="faAngleRight" />
+              </span>
+
+
+
             </button>
 
             <div v-if="showVariantSubMenu"
@@ -130,7 +171,7 @@ import Checklist from './variants/Checklist.vue';
 import Notes from './variants/Notes.vue';
 import Grid from './variants/Grid.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faPlus, faAngleDown } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faAngleDown, faAngleLeft, faAngleRight,faEllipsisVertical } from '@fortawesome/free-solid-svg-icons';
 import useDataUpdater from '@/composables/useDataUpdater';
 
 const route = useRoute();
@@ -140,11 +181,15 @@ const userId = currentUser.value.uid;
 const travelPlanId = ref(route.params.travelPlanId);
 const travelPlan = ref(null);
 const loading = ref(true);
+const showPlanMenu = ref(false);
+const isEditingTitle = ref(false);
+const titleText = ref(null);
 // const error = ref(null);
 
 const activeTabIndex = ref(0);
 const editingTabIndex = ref(null);
 const editingTabName = ref('');
+const editingTabKey = ref('');
 const editTabInputs = ref([]); // Array to hold input refs
 const showVariantSubMenu = ref(false);
 const {
@@ -152,6 +197,7 @@ const {
   updateData,
   isLoading,
   error,
+  deletePlan,
   unsubscribe
 } = useDataUpdater({ userId, travelPlanId });
 
@@ -221,8 +267,9 @@ onMounted(async () => {
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-      travelPlan.value = { id: docSnap.id, ...docSnap.data() };
-     console.log('PLAN:', JSON.parse(JSON.stringify(travelPlan.value)))
+    console.log('docSnap.data():', JSON.parse(JSON.stringify(docSnap.data())))
+     travelPlan.value = { id: docSnap.id, ...docSnap.data() };
+    console.log('PLAN:', JSON.parse(JSON.stringify(travelPlan.value)))
     } else {
       error.value = 'Travel plan not found.';
     }
@@ -272,7 +319,37 @@ const toggleVariantSubMenu = (event) => {
 function handleUpdatePlanItem({ dataPath, updatedData }) { 
   updateData(updatedData, dataPath);
 }
+async function deleteTravelPlan() { 
+  await deletePlan();
+  router.push('/');
+}
 
+// Title editing functions
+const startEditingTitle = () => {
+  isEditingTitle.value = true; // Set this first to trigger the input's rendering
+ 
+
+  nextTick(() => {
+    if (titleText.value) { // Now titleText.value will be the DOM element
+      
+      console.log('title', travelPlan.value.title) 
+      titleText.value.value = travelPlan.value.title; // Set the input's value
+      titleText.value.focus();
+    }
+  });
+};
+
+const finishEditingTitle = () => {  
+  const newValue = titleText.value?.value.trim();
+  if (travelPlan.value.title != newValue){
+    travelPlan.value.title = newValue;
+    handleUpdatePlanItem({dataPath: `title`, updatedData: newValue});
+  }
+  isEditingTitle.value = false;
+};
+const cancelEditingTitle = () => {
+  isEditingTitle.value = false;
+};
 
 // =========== MAIN FUNCTIONS END =============
 
@@ -288,16 +365,20 @@ const setActiveTab = (index) => {
 
 const saveTabName = () => {
   if (editingTabIndex.value !== null) {
-    if (editingTabName.value.trim()) {
-      tabs.value[editingTabIndex.value].name = editingTabName.value.trim();
+    const newTabName = editingTabName.value.trim();
+    if (newTabName) {
+      tabs.value[editingTabIndex.value].title = newTabName;
+      handleUpdatePlanItem({dataPath: `tabs.${editingTabKey.value}`, updatedData: tabs.value[editingTabIndex.value]})
     }
-    editingTabIndex.value = null;
+    editingTabIndex.value = null; 
+    editingTabKey.value = ''; 
   }
 };
 
 // Cancel editing tab name
 const cancelEditingTab = () => {
-  editingTabIndex.value = null;
+  editingTabIndex.value = null; 
+  editingTabKey.value = ''; 
 };
 
 // Updated toggle tab menu function
@@ -324,7 +405,9 @@ const startEditingTab = (index) => {
   if (index !== null) {
     editingTabIndex.value = index; 
     editingTabName.value = tabs.value[index].title;
-    dropdown.visible = false; 
+    editingTabKey.value = tabs.value[index].key; 
+
+    dropdown.visible = false;  
 
     nextTick(() => {
       if (editTabInputs.value[index]) {
@@ -337,31 +420,44 @@ const startEditingTab = (index) => {
   }
 };
 
-const generateUniqueTabKey = (type) => {
-  // console.log('tabs', JSON.parse(JSON.stringify(travelPlan.value.tabs)))
-  const existingKeysOfType = Object.keys(travelPlan.value.tabs).filter(key => key.startsWith(`${type}_`));
-  const maxCounter = existingKeysOfType.reduce((max, key) => {
-    const parts = key.split('_');
-    if (parts.length === 2 && parts[0] === type) {
-      const counter = parseInt(parts[1], 10);
-      return isNaN(counter) ? max : Math.max(max, counter);
+const generateUniqueTabKey = (type) => { 
+   const existingKeys = new Set(Object.keys(travelPlan.value.tabs || {})); // Pass in travelPlan.value.tabs
+  // if (travelPlan.value){
+  // // travelPlan.value.tabs.forEach(tab => {
+  // //   if (tab.key) {
+  // //     existingKeys.add(tab.key);
+  // //   }
+  // // });
+  // consolee.log('travelPlan', )
+
+  // }
+  console.log('key', existingKeys) 
+  let newTabKey;
+  let counter = 1;
+
+  while (true) {
+    newTabKey = `${type}_${counter}`;
+    if (!existingKeys.has(newTabKey)) {
+      break; // Found a unique key
     }
-    return max;
-  }, 0);
-  return `${type}_${maxCounter + 1}`;
+    counter++;
+  }
+  return newTabKey;
 };
 
 
 // Add a new tab
 const addNewTab = (type = 'table') => {
   const newTabKey = generateUniqueTabKey(type);
-  const newTabPosition = Object.keys(tabs.value).length + 1;
+  const newTabPosition = Object.values(tabs.value).reduce((maxPosition, tab) => {
+  return Math.max(maxPosition, tab.tabPosition || 0); // Handle cases where tab.position might be undefined or 0
+}, 0) + 1;
   let newValue;
   let newTitle;
 
   switch (type) {
     case 'table':
-      newTitle = 'New Table';
+      newTitle = `Table ${newTabPosition}`;
       newValue = {
         headers: defaultTableHeaders.value.map(header => ({ ...header })),
         tableData: defaultTableData.value.map(row => ({ ...row })),
@@ -381,6 +477,7 @@ const addNewTab = (type = 'table') => {
     default:
       console.error(`Unknown tab type: ${type}`);
       return;
+
   }
   const newTabContent = {
     tabPosition: newTabPosition,
@@ -389,75 +486,50 @@ const addNewTab = (type = 'table') => {
     tabId: newTabPosition, // Using position as a simple initial ID
     value: newValue,
   } 
-  travelPlan.value.tabs[newTabKey] = newTabContent;  
+  travelPlan.value.tabs[newTabKey] = newTabContent;
+  console.log('tab:', JSON.parse(JSON.stringify({dataPath: `tabs.${newTabKey}`, updatedData: newTabContent})))
+
+  handleUpdatePlanItem({dataPath: `tabs.${newTabKey}`, updatedData: newTabContent})
+
 };
 
 const setTabVariant = (variant, index) => {
   try {
     if (index !== null) {
-      const tab = tabs.value[index];
-      tab.variant = variant;
+      const tab = tabs.value[index]; 
+      tab.type = variant;
 
       // Close all menus
       dropdown.visible = false;
       showVariantSubMenu.value = false;
-
-      // Set up appropriate data for the selected variant
-      if (variant !== 'table') {
-        delete tab.tabData;
-        delete tab.tableHeaders;
-        tab.content = '';
-      } else if (variant === 'table' && !tab.tabData) {
-        tab.tabData = defaultTableData.map(item => ({ ...item }));
-        tab.tableHeaders = [...defaultTableHeaders];
-      }
+  
+      if (variant !== 'table') { 
+        tab.value = null;
+      } else if (variant === 'table' && !tab.tabData) { 
+        tab.value = {};
+        tab.value.tableData = defaultTableData.value.map(item => ({ ...item }));
+        tab.value.headers = [...defaultTableHeaders.value];
+      }  
+      console.log('tab', tab)
+      handleUpdatePlanItem({dataPath: `tabs.${tabs.value[index].key}`, updatedData: tab}) 
     }
   } catch (error) {
     console.error('Error in setTabVariant:', error);
   }
 };
-
-
-// Duplicate a tab
-const duplicateTab = (index) => {
-  if (index !== null) {
-    const originalTab = tabs.value[index];
-    const newTabName = `${originalTab.name} (copy)`;
-
-    // Deep copy the tabData and tableHeaders
-    const newTableData = originalTab.tabData
-      ? originalTab.tabData.map((item) => {
-        if (item.value) {
-          return {
-            ...item,
-            value: item.value.map((row) =>
-              row.map((cell) => ({ ...cell }))
-            ),
-          };
-        }
-        return { ...item }
-      })
-      : undefined;
-    const newTableHeaders = originalTab.tableHeaders
-      ? originalTab.tableHeaders.map((header) => ({ ...header }))
-      : undefined;
-
-    tabs.value.splice(index + 1, 0, {
-      name: newTabName,
-      content: originalTab.content,
-      variant: originalTab.variant,
-      tabData: newTableData, // Use the deep copied data
-      tableHeaders: newTableHeaders, // Use the deep copied headers
-    });
-
-    // Set the new tab as active
-    setActiveTab(index + 1);
-    dropdown.visible = false; // Close dropdown after duplicating
-  }
-};
+ 
 
 // Delete a tab
 const deleteTab = (index) => {
+  const activeTab = tabs.value[index]; 
+  const newTabs = {}, existingTabs = travelPlan.value.tabs;
+  for (const key in travelPlan.value.tabs) {
+    if (existingTabs.hasOwnProperty(key) && key !== activeTab.key) {
+      newTabs[key] = existingTabs[key];
+    }
+  }
+ 
+  console.log('tab', newTabs) 
   if (index !== null) {
     tabs.value.splice(index, 1);
 
@@ -465,24 +537,13 @@ const deleteTab = (index) => {
     if (index <= activeTabIndex.value) {
       activeTabIndex.value = Math.max(0, activeTabIndex.value - 1);
     }
-
-    dropdown.visible = false; // Close dropdown after deleting
   }
+    dropdown.visible = false; // Close dropdown after deleting 
+  // console.log( 'aaa', JSON.parse(JSON.stringify({dataPath: `tabs`, updatedData: newTabs})))
+  handleUpdatePlanItem({dataPath: `tabs`, updatedData: newTabs});
+  // }
 };
-
-// Update table data for a specific tab
-const updateTableData = (index, newData) => {
-  if (tabs.value[index] && tabs.value[index].variant === 'table') {
-    tabs.value[index].tabData = newData;
-  }
-};
-
-// Update table headers for a specific tab
-const updateTableHeaders = (index, newHeaders) => {
-  if (tabs.value[index] && tabs.value[index].variant === 'table') {
-    tabs.value[index].tableHeaders = newHeaders;
-  }
-};
+ 
 // =========== TAB FUNCTIONS END =============
 
 </script>

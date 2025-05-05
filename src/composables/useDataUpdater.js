@@ -1,5 +1,5 @@
 import { ref, watch } from 'vue';
-import { doc, updateDoc, onSnapshot } from 'firebase/firestore';
+import { deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase-config';
 import debounce from 'lodash/debounce';
 
@@ -35,15 +35,15 @@ export default function useDataUpdater({ userId, travelPlanId, dataPath, debounc
     error.value = null;
 
     try { 
-      console.log('===FINAL PATH:',path);
-      console.log('===FINAL VALUE:', JSON.parse(JSON.stringify(newValue)));   
+      // console.log('===FINAL PATH:',path);
+       console.log('===FINAL VALUE:', JSON.parse(JSON.stringify(newValue)));   
 
       await updateDoc(docRef, {
         [path]: newValue
       });
 
 
-      console.log('updated');
+      console.log('Document updated:', path);
       isLoading.value = false;
     } catch (err) {
       console.error(err);
@@ -51,11 +51,31 @@ export default function useDataUpdater({ userId, travelPlanId, dataPath, debounc
       isLoading.value = false;
     }
   }, debounceDelay);
+
+   // Function to delete the entire travel plan
+   const deletePlan = async () => {
+    isLoading.value = true;
+    error.value = null;
+
+    try {
+      await deleteDoc(docRef);
+      console.log('Document deleted!');
+      isLoading.value = false;
+      data.value = null; // Clear the data after successful deletion
+    } catch (err) {
+      console.error('Error deleting document:', err);
+      error.value = err;
+      isLoading.value = false;
+    }
+  };
+
   return {
     data,
     updateData,
     isLoading,
     error,
-    unsubscribe
+    unsubscribe,
+    deletePlan  
   };
+   
 }

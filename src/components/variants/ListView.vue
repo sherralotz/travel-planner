@@ -30,9 +30,8 @@
             <div class="text-end w-22">{{ item.date }}</div>
 
             <div class="ms-2 ps-2">
-              <div class="">{{ item.activity }}  </div>
-              <div class="text-gray-600">{{ item.notes.text }}  </div>
-              <!-- <div class="">{{ item.notes }}  </div> -->
+              <div class="">{{ item.activity }}  </div> 
+              <div class="text-gray-600 text-sm" v-if="item.notes && item.notes.text">{{ item.notes.text }} </div>
 
               <div> 
                 <span  v-for="(linkItem, noteIndex) in item.notes.links" :key="noteIndex" class=" ">

@@ -45,7 +45,8 @@
             <span
               v-if="editingItemId !== item.id"
               @click="startEditing(item.id)"
-              class="flex-grow cursor-text"
+              :class="{'text-gray-400': !item.text }"
+              class="flex-grow cursor-text "
             >{{ item.text || 'New item' }}</span>
             <input
               v-else
