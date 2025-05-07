@@ -46,7 +46,7 @@
 
       <div class="notes-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-3" ref="notesGrid">
         <div v-for="(note, index) in sortedNotes" :key="note.id"
-          class="note-card overflow-hidden px-3 py-3 bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
+          class="note-card border border-t-red-400 border-t-3 border-l-gray-100 border-r-gray-100 border-b-gray-100 overflow-hidden px-3 py-3 bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
           @click="openEditModal(note)">
           <div class="note-menu-container relative w-full">
             <button class="note-menu-button absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none p-2"
@@ -70,7 +70,7 @@
               </button>
             </div>
           </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">
+          <h3 class="text-xl font-semibold text-gray-800 mb-2 w-[80%] break-words ">
             {{ note.title }}
           </h3>
 
@@ -79,10 +79,10 @@
           <div v-else> 
             <ul class="list-disc pl-2 text-gray-700">
               <li v-for="item in note.items" :key="item.id" class="flex m-1"> 
-                <div v-if="!item.completed" class="w-5 h-5 bg-green-300 rounded-sm"> 
-                  <FontAwesomeIcon :icon="faCheck" class="text-white ms-0.5"/>
+                <div v-if="item.completed" class="w-5 h-5 bg-green-300 rounded-sm"> 
+                  <FontAwesomeIcon :icon="faCheck" class="text-white ms-1"/>
                  </div>
-                 <div v-if="item.completed" class=" rounded-sm w-5 h-5 bg-gray-200">  
+                 <div v-if="!item.completed" class=" rounded-sm w-5 h-5 bg-gray-200">  
                  </div>
                 <div class="ms-2"> {{item.text}}</div>
               </li>

@@ -1,95 +1,73 @@
 <template>
-  <div class="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg h-[calc(100dvh-50px)]"> 
-    <button 
-      @click="showCreatePlan = !showCreatePlan"
-      class="mb-8 px-3 py-2 bg-red-500 hover:bg-red-400 text-white  font-medium rounded-lg  transition-colors shadow-md flex items-center gap-2"
-    >
-    <FontAwesomeIcon :icon="faPlus"   />
-      Create a New Plan
-    </button>
-    
-    <CreatePlan 
-      v-if="showCreatePlan" 
-      @planCreated="fetchPlans" 
-      @close="showCreatePlan = false" 
-      class="mb-8"
-    />
-    
-    <!-- Loading state -->
-    <div 
-      v-if="loading"
-      class="py-12 text-center text-gray-500 flex items-center justify-center gap-3"
-    >
-      <span class="i-lucide-loader-2 w-6 h-6 animate-spin"></span>
-      <span>Loading plans...</span>
+    <div class="max-w-4xl mx-auto p-6 bg-white rounded-xl shadow-lg h-[calc(100dvh-50px)] flex flex-col">
+        <div class="overflow-hidden flex-grow">
+            <button @click="showCreatePlan = !showCreatePlan"
+                class="px-3 py-2 bg-red-500 hover:bg-red-400 text-white  font-medium rounded-lg  transition-colors shadow-md flex items-center gap-2">
+                <FontAwesomeIcon :icon="faPlus" />
+                Create a New Plan
+            </button>
+
+            <CreatePlan v-if="showCreatePlan" @planCreated="fetchPlans" @close="showCreatePlan = false" class="mb-8" />
+
+            <!-- Loading state -->
+            <div v-if="loading" class="py-12 text-center text-gray-500 flex items-center justify-center gap-3">
+                <span class="i-lucide-loader-2 w-6 h-6 animate-spin"></span>
+                <span>Loading plans...</span>
+            </div>
+
+            <!-- Error state -->
+            <div v-else-if="error" class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                {{ error }}
+            </div>
+
+            <!-- Plans list -->
+            <div v-else-if="plans.length > 0" class=" mt-2">
+                <ul class=" overflow-auto h-[calc(100dvh-200px)]">
+                    <li v-for="plan in plans" :key="plan.id" class="hover:bg-gray-100 transition-colors border border-gray-200 rounded-lg mb-1">
+                        <router-link :to="`/plan/${plan.id}`" class="flex items-center justify-between p-4">
+                            <span class="text-lg text-gray-800 ">{{ plan.title }}</span>
+                            <span class="i-lucide-chevron-right w-5 h-5 text-gray-400"></span>
+                        </router-link>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Empty state -->
+            <template v-else>
+                <div v-if="!showCreatePlan"
+                    class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    <p class="text-lg text-gray-600">No travel plans yet.</p>
+                    <p class="text-sm text-gray-500 mt-2">Click "Create a New Plan" to start planning your next
+                        adventure!</p>
+
+                    <button @click="createDemoPlan"
+                        class="mt-6 px-4 py-2 bg-gray-400 hover:bg-gray-300 text-white font-medium rounded-lg transition-colors shadow-md">
+                        Add Demo Plan
+                    </button>
+                </div>
+            </template>
+        </div>
+        <ViewVersion/>
     </div>
-    
-    <!-- Error state -->
-    <div 
-      v-else-if="error"
-      class="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700"
-    >
-      {{ error }}
-    </div>
-    
-    <!-- Plans list -->
-    <div 
-      v-else-if="plans.length > 0"
-      class="border border-gray-200 rounded-xl overflow-hidden"
-    >
-      <ul class="divide-y divide-gray-200">
-        <li 
-          v-for="plan in plans" 
-          :key="plan.id"
-          class="hover:bg-gray-100 transition-colors"
-        >
-          <router-link 
-            :to="`/plan/${plan.id}`"
-            class="flex items-center justify-between p-4"
-          >
-            <span class="text-lg text-gray-800 ">{{ plan.title }}</span>
-            <span class="i-lucide-chevron-right w-5 h-5 text-gray-400"></span>
-          </router-link>
-        </li>
-      </ul>
-    </div>
-    
-    <!-- Empty state -->
-     <template v-else>
-    <div 
-       v-if="!showCreatePlan"
-      class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300"
-    > 
-      <p class="text-lg text-gray-600">No travel plans yet.</p>
-      <p class="text-sm text-gray-500 mt-2">Click "Create a New Plan" to start planning your next adventure!</p>
-   
-      <button 
-          @click="createDemoPlan"
-          class="mt-6 px-4 py-2 bg-gray-400 hover:bg-gray-300 text-white font-medium rounded-lg transition-colors shadow-md"
-        >
-          Add Demo Plan
-        </button>
-    </div>
-  </template>
-  </div>
 </template>
-  
-  <script setup>
-  import { ref, onMounted, inject } from 'vue';
-  import { db } from '@/config/firebase-config';
-  import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
-  import CreatePlan from '@/components/CreatePlan.vue'; 
-  import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-  import { faPlus } from '@fortawesome/free-solid-svg-icons';
-  import { useRouter } from 'vue-router';
-  
-  const currentUser = inject('currentUser');
-  const plans = ref([]);
-  const loading = ref(true);
-  const error = ref(null);
-  const showCreatePlan = ref(false);
-  const router = useRouter();
-  const demoTravelPlan = { 
+
+<script setup>
+import { ref, onMounted, inject } from 'vue';
+import { db } from '@/config/firebase-config';
+import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import CreatePlan from '@/components/CreatePlan.vue';
+import ViewVersion from '@/components/ViewVersion.vue'; 
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { useRouter } from 'vue-router';
+
+const currentUser = inject('currentUser');
+const plans = ref([]);
+const loading = ref(true);
+const error = ref(null);
+const showCreatePlan = ref(false);
+const router = useRouter();
+const demoTravelPlan = {
     "tabs": {
         "checklist_1": {
             "title": "Things to Bring",
@@ -197,7 +175,7 @@
                             },
                             {
                                 "cellType": "default",
-                                "value": "Meet at Sue's place BGC"
+                                "value": "Meet at Condo"
                             },
                             {
                                 "value": {
@@ -421,75 +399,65 @@
             "title": "Itinerary",
             "type": "table"
         }
-    }, 
+    },
     "title": "Saigon (Demo)"
 };
-  onMounted(async () => {
+onMounted(async () => {
     await fetchPlans();
-  });
-  
-  async function fetchPlans() {
+});
+
+async function fetchPlans() {
     loading.value = true;
     error.value = null;
     if (!currentUser.value?.uid) {
-      error.value = 'User not authenticated.';
-      loading.value = false;
-      return;
+        error.value = 'User not authenticated.';
+        loading.value = false;
+        return;
     }
-  
-    try { 
-      const plansCollection = collection(db, `users/${currentUser.value.uid}/travelPlans`);
-      const q = query(plansCollection, where('createdBy', '==', currentUser.value.uid));
-      const querySnapshot = await getDocs(q);
-      plans.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // let tempDemoData = demoTravelPlan;
-      // tempDemoData.createdBy = currentUser.value.uid;
-      // plans.value.push(tempDemoData);
+
+    try {
+        const plansCollection = collection(db, `users/${currentUser.value.uid}/travelPlans`);
+        const q = query(plansCollection, where('createdBy', '==', currentUser.value.uid));
+        const querySnapshot = await getDocs(q);
+        plans.value = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
     } catch (err) {
-      console.error('Error fetching plans: ', err);
-      error.value = 'Failed to fetch travel plans.';
+        console.error('Error fetching plans: ', err);
+        error.value = 'Failed to fetch travel plans.';
     } finally {
-      loading.value = false;
+        loading.value = false;
     }
-  }
-  
-  function handlePlanCreated() {
+}
+
+function handlePlanCreated() {
     showCreatePlan.value = false;
     fetchPlans();
-  }
-  
-  function handleCloseCreatePlan() {
-    showCreatePlan.value = false;
-  }
-
-  async function createDemoPlan() {
-  if (!currentUser.value?.uid) {
-    alert('You must be logged in to create a plan.');
-    return;
-  }
-  
-  try {
-    // Two options for creating a demo plan:
-    
-    // Option 1: Add directly to Firestore
-    const demoData = {...demoTravelPlan, createdAt: new Date(), createdBy: currentUser.value.uid};
-    const docRef = await addDoc(collection(db, `users/${currentUser.value.uid}/travelPlans`), demoData);
-    await fetchPlans();
-    router.push(`/plan/${docRef.id}`);
-    
-    // Option 2: Use the CreatePlan component
-    // Uncomment below and comment out Option 1 if you prefer to use the CreatePlan component
-    /*
-    initialPlanData.value = demoTravelPlan;
-    showCreatePlan.value = true;
-    */
-  } catch (error) {
-    console.error('Error creating demo plan: ', error);
-    alert('Failed to create demo plan.');
-  }
 }
-  </script>
-  
-  <style scoped>
-  /* ... styles ... */
-  </style>
+
+function handleCloseCreatePlan() {
+    showCreatePlan.value = false;
+}
+
+async function createDemoPlan() {
+    if (!currentUser.value?.uid) {
+        alert('You must be logged in to create a plan.');
+        return;
+    }
+
+    try {
+        // Two options for creating a demo plan:
+
+        // Option 1: Add directly to Firestore
+        const demoData = { ...demoTravelPlan, createdAt: new Date(), createdBy: currentUser.value.uid };
+        const docRef = await addDoc(collection(db, `users/${currentUser.value.uid}/travelPlans`), demoData);
+        await fetchPlans();
+        router.push(`/plan/${docRef.id}`);
+    } catch (error) {
+        console.error('Error creating demo plan: ', error);
+        alert('Failed to create demo plan.');
+    }
+}
+</script>
+
+<style scoped>
+/* ... styles ... */
+</style>

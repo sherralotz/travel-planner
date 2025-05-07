@@ -40,8 +40,7 @@
                       target="_blank"
                       rel="noopener noreferrer"
                       class="bg-gray-300 px-2 py-1 w-full rounded-xl text-[11px] me-1"
-                    >
- 
+                    > 
                       <FontAwesomeIcon v-if="isMapsLink(linkItem.url)" :icon="faLocationDot" class="me-1"/>
                       <FontAwesomeIcon v-else :icon="faArrowUpRightFromSquare" class="me-1"/>
                        
@@ -193,8 +192,8 @@ const getLinkLabel = (value) => {
 
 
 // Function to determine if it is a maps link
-const isMapsLink = (value) => {
-  return typeof value === 'string' && value.startsWith('maps');
+const isMapsLink = (value) => { 
+  return typeof value === 'string' && value.includes('maps');
 };
 
   </script>

@@ -45,9 +45,9 @@
           <span
             v-if="!editingItem || editingItem.id !== item.id"
             @click="startEditing(item)"
-            class="flex-grow cursor-text"
+            class="flex-grow cursor-text w-full h-7"
               :class="{'text-gray-400': !item.text }"
-          >{{ item.text || 'New item' }}</span>
+          >{{ item.text || '' }}</span>
           <input
             v-else
             type="text"
@@ -466,18 +466,7 @@ defineExpose({
     saveItems();
   }
 });
-
-
-// async function updateChecklistItem(checklist) {
-//   const userId = currentUser.value.uid;
-
-//   if (!userId || !travelPlanId.value || !checklist || !tabKey.value) {
-//     console.error("Missing user ID, travel plan ID, tab key or active travel plan");
-//     return;
-//   }
-
-//   const dataPath = `tabs.${tabKey.value}.value`;  
-// }
+ 
 </script>
 
 <style scoped>

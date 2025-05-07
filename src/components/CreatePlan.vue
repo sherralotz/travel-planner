@@ -1,14 +1,6 @@
 <template>
-  <div class="bg-white rounded-xl shadow-lg border border-gray-200 p-6 max-w-2xl mx-auto">
-    <div class="flex items-center justify-between">
-      <!-- <h2 class="text-2xl font-bold text-indigo-700">Create Your Travel Plan</h2> -->
-      <button 
-        type="button" 
-        @click="$emit('close')"
-        class="p-2 rounded-full hover:bg-gray-100 text-gray-500"
-      >
-        <span class="i-lucide-x w-5 h-5"></span>
-      </button>
+  <div class="bg-white rounded-xl p-4 max-w-2xl mx-auto overflow-y-auto h-11/12 mt-2">
+    <div class="flex items-center justify-between">  
     </div>
 
     <form @submit.prevent="createTravelPlan" class="space-y-3">
@@ -19,7 +11,7 @@
           id="title" 
           v-model="title" 
           required 
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none"
           placeholder="e.g., Summer Europe Trip 2025"
         />
       </div>
@@ -35,7 +27,7 @@
               id="numDays" 
               value="numDays"
               v-model="durationOption"
-              class="w-5 h-5 text-red-500 border-gray-300 focus:ring-red-500" 
+              class="w-5 h-5 text-red-500 border-gray-300 focus:outline-none" 
             />
             <label for="numDays" class="flex items-center gap-2 text-gray-700">
               <FontAwesomeIcon :icon="faHashtag" class="text-red-500" /> 
@@ -53,7 +45,7 @@
                 v-model="numberOfDays" 
                 min="1"
                 max="30"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
               />
             </div>
           </div>
@@ -65,7 +57,7 @@
               id="dateRange" 
               value="dateRange"
               v-model="durationOption"
-              class="w-5 h-5 text-red-500 border-gray-300 focus:ring-red-500" 
+              class="w-5 h-5 text-red-500 focus:outline-none" 
             />
             <label for="dateRange" class="flex items-center gap-2 text-gray-700">
               <FontAwesomeIcon :icon="faCalendarDays" class="text-red-500" /> 
@@ -82,7 +74,7 @@
                   type="date" 
                   id="startDate" 
                   v-model="startDate" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
                 />
               </div>
               <div class="w-1/2">
@@ -91,7 +83,7 @@
                   type="date" 
                   id="endDate" 
                   v-model="endDate" 
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-1 focus:ring-red-500 focus:border-red-500"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none"
                 />
               </div>
             </div>

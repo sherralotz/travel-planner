@@ -7,7 +7,7 @@
       <div class="flex">
         <div class="flex w-full">
           <button @click="goHome"
-            class="my-2 me-2 px-2 py-1 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors">
+            class="my-2 ms-1 sm:ms-0 me-2 px-2 py-1 border border-gray-300 text-gray-700 text-sm rounded-md hover:bg-gray-50 transition-colors">
             <FontAwesomeIcon :icon="faAngleLeft" />
           </button>
 
@@ -15,7 +15,8 @@
       <h2
         v-if="!isEditingTitle"
         @click="startEditingTitle"
-        class="text-lg font-semibold cursor-text truncate mt-2 w-[25%] " 
+        class="text-lg font-semibold cursor-text truncate mt-2 sm:w-[45%] w-[80%] 
+       " 
       >
         {{ travelPlan.title  }}
       </h2>
@@ -26,7 +27,7 @@
         @keyup.enter="finishEditingTitle"
         @blur="finishEditingTitle"
         @keyup.esc="cancelEditingTitle"
-        class="text-xl font-semibold  w-[25%] rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-1"
+        class="mt-2 text-lg h-8 font-semibold sm:w-[45%] w-[80%] rounded-md focus:outline-none   p-1"
         
       />
     </div>
@@ -82,7 +83,7 @@
 
             <button class="flex items-center justify-center h-9 w-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100"
               @click="addNewTab('table')">
-              <FontAwesomeIcon :icon="faPlus" class="me-1" />
+              <FontAwesomeIcon :icon="faPlus" class="me-2 ms-1" />
             </button>
           </div>
         </div>
