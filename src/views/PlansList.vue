@@ -35,7 +35,7 @@
             <!-- Empty state -->
             <template v-else>
                 <div v-if="!showCreatePlan"
-                    class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300">
+                    class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300 mt-2">
                     <p class="text-lg text-gray-600">No travel plans yet.</p>
                     <p class="text-sm text-gray-500 mt-2">Click "Create a New Plan" to start planning your next
                         adventure!</p>

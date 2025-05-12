@@ -17,7 +17,6 @@
         @blur="finishEditingTitle"
         @keyup.esc="cancelEditingTitle"
         class="text-xl font-semibold w-full rounded-md border-gray-300 focus:outline-none p-1"
-
         v-focus
       />
     </div>
@@ -26,16 +25,20 @@
       <li
         v-for="(item, index) in incompleteItems"
         :key="item.id"
-        class="flex items-center justify-between bg-white p-2 mb-1 cursor-grab rounded-md border border-gray-200 shadow-sm"
-        :class="{
-          'cursor-grabbing': isDragging && draggedIndex === index,
-        }"
-        @mousedown="startDrag(index, $event)"
-        @mouseup="endDrag"
-        :data-id="item.id"
+        class="flex items-center justify-between bg-white p-2 mb-1 rounded-md border border-gray-200 shadow-sm"
       >
         <div class="flex items-center flex-grow">
-          <FontAwesomeIcon :icon="faBars" v-if="!item.completed" class="me-3"/>
+          <FontAwesomeIcon
+            :icon="faBars"
+            v-if="!item.completed"
+            class="me-3 cursor-grab"
+            :class="{
+              'cursor-grabbing': isDragging && draggedIndex === index,
+            }"
+            @mousedown="startDrag(index, $event)"
+            @mouseup="endDrag"
+            :data-id="item.id"
+          />
           <input
             type="checkbox"
             :checked="item.completed"
@@ -46,7 +49,7 @@
             v-if="!editingItem || editingItem.id !== item.id"
             @click="startEditing(item)"
             class="flex-grow cursor-text w-full h-7"
-              :class="{'text-gray-400': !item.text }"
+            :class="{'text-gray-400': !item.text }"
           >{{ item.text || '' }}</span>
           <input
             v-else
@@ -63,7 +66,7 @@
           @click="deleteItem(item.id)"
           class="text-gray-500 hover:text-red-500 transition-colors focus:outline-none"
         >
-        <FontAwesomeIcon :icon="faClose" class="me-3"/>
+          <FontAwesomeIcon :icon="faClose" class="me-3"/>
         </button>
       </li>
     </ul>
@@ -102,12 +105,12 @@
             @click="deleteItem(item.id)"
             class="text-gray-500 hover:text-red-500 transition-colors focus:outline-none"
           >
-          <FontAwesomeIcon :icon="faClose" class="me-3"/>
+            <FontAwesomeIcon :icon="faClose" class="me-3"/>
           </button>
         </li>
       </ul>
     </div>
-    </div>
+  </div>
 </template>
 
 <script setup>
@@ -116,8 +119,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { Sortable } from 'sortablejs';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faBars, faClose, faPlus } from '@fortawesome/free-solid-svg-icons';
-import debounce from 'lodash/debounce'; 
- 
+import debounce from 'lodash/debounce';
+
 const props = defineProps({
   initialItems: {
     type: Array,
@@ -129,7 +132,7 @@ const props = defineProps({
   },
   note: {
     type: Object,
-    default: null, 
+    default: null,
   },
   travelPlanId: {
     type: String,
@@ -198,6 +201,7 @@ onMounted(() => {
   if (incompleteItemsContainer.value) {
     sortableInstance = new Sortable(incompleteItemsContainer.value, {
       animation: 150,
+      handle: '.fa-bars', // Specify the handle for dragging
       onEnd: (evt) => {
         const newIndex = evt.newIndex;
         const oldIndex = evt.oldIndex;
@@ -237,22 +241,22 @@ onMounted(() => {
 
 // Save items to local storage whenever the items array changes
 const saveItems = () => {
-  // Emit update events 
+  // Emit update events
   emit('update:title', title.value);
 };
- 
+
 const emitChange = () => {
   // EDITING A CHECKLIST FROM A TAB
  // console.log('change', props.newNote)
   if (tabKey.value){
-    const dataPath = `tabs.${tabKey.value}.value`; 
+    const dataPath = `tabs.${tabKey.value}.value`;
     const updatedChecklist = {
       title: title.value,
       items: items.value
-    } 
+    }
       //console.log(' ??????? tabKey', JSON.parse(JSON.stringify(tabKey)))
-     emit('update-checklist', { dataPath, updatedData: updatedChecklist });
-  } 
+      emit('update-checklist', { dataPath, updatedData: updatedChecklist });
+  }
 
   // EDITING A CHECKLIST FROM A NOTE
   if (activeNote.value && activeNote.value.key){
@@ -262,16 +266,16 @@ const emitChange = () => {
       items: items.value
     }
     emit('update-note-checklist', updatedChecklist,  activeNote.value.key);
-  } 
+  }
 
 
     // CREATING A NEW NOTE WITH CHECKLIST
     if (props.newNote){
-      const updatedChecklist ={ 
+      const updatedChecklist ={
         title: title.value,
         items: items.value
       }
-      emit('update-note-checklist', updatedChecklist); 
+      emit('update-note-checklist', updatedChecklist);
     }
 };
 
@@ -416,13 +420,6 @@ const completedItems = computed(() => {
 });
 
 const startDrag = (index, event) => {
-  // Don't start drag if we're clicking on input elements or if we're editing
-  if (event.target.tagName === 'INPUT' ||
-      event.target.tagName === 'BUTTON' ||
-      editingItem.value !== null) {
-    return;
-  }
-
   if (!items.value[index].completed) { // Only allow dragging incomplete items
     draggedIndex.value = index;
     isDragging.value = true;
@@ -466,7 +463,7 @@ defineExpose({
     saveItems();
   }
 });
- 
+
 </script>
 
 <style scoped>
