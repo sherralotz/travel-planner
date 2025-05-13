@@ -1,8 +1,6 @@
 
 <script setup> 
-import packageJson from "../../package.json"; 
-
-console.log('packageJson', packageJson.version)
+import packageJson from "../../package.json";  
 </script>
 
 <template>

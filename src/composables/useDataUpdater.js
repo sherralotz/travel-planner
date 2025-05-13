@@ -2,7 +2,9 @@ import { ref, watch } from 'vue';
 import { deleteDoc, doc, updateDoc, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase-config';
 import debounce from 'lodash/debounce';
-
+import isEqual from 'lodash.isequal';
+let lastDataPath = null;
+let lastUpdatedData = null;
 export default function useDataUpdater({ userId, travelPlanId, dataPath, debounceDelay = 500 }) {
   const data = ref(null);
   const isLoading = ref(false);
@@ -30,6 +32,11 @@ export default function useDataUpdater({ userId, travelPlanId, dataPath, debounc
       console.error('You must provide a path when updating');
       return;
     }
+     
+    if (path === lastDataPath && isEqual(newValue, lastUpdatedData)) {
+      console.log('Skipped update: No changes detected for', path);
+      return;
+    }
 
     isLoading.value = true;
     error.value = null;
@@ -44,7 +51,11 @@ export default function useDataUpdater({ userId, travelPlanId, dataPath, debounc
 
 
       console.log('Document updated:', path);
-      isLoading.value = false;
+      isLoading.value = false; 
+
+      lastDataPath = path;
+      lastUpdatedData = JSON.parse(JSON.stringify(newValue)); // deep clone to avoid mutation issues
+
     } catch (err) {
       console.error(err);
       error.value = err;

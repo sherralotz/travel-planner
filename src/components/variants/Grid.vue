@@ -44,7 +44,7 @@
             </table>
           </div>
           <!-- Scrollable tbody with auto height until max -->
-          <div class="row-body overflow-y-scroll w-full max-h-[calc(100dvh-260px)]">
+          <div class="row-body overflow-y-scroll w-full max-h-[calc(100dvh-260px)]" ref="gridBody">
             <table class="min-w-full border-collapse text-sm w-full table-fixed">
               <tbody>
                 <tr v-for="(row, rowIndex) in tabData" :key="rowIndex" class=" w-full" :class="[
@@ -203,7 +203,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, onMounted, nextTick } from 'vue';
+import { ref, reactive, watch, onMounted, onUnmounted, nextTick } from 'vue';
 import ListView from './ListView.vue';
 import LinkModal from '../common/LinkModal.vue';
 import { format } from 'date-fns';
@@ -245,6 +245,7 @@ const openOptionsIndex = ref(null);
 const cellRefs = ref({}); // To store refs to cells
 const isLinkModalVisible = ref(false);
 const currentLinkRowIndex = ref(null);
+const gridBody = ref(null);
 const dropdown = reactive({
   visible: false,
   top: 0,
@@ -311,10 +312,10 @@ const handleResize = () => {
  
 // Function to update cell data when edited
 const updateCell = (rowIndex, columnIndex, event) => {
-  console.log('updateCell', columnIndex)
+  // console.log('updateCell', columnIndex)
   // Get the new value from the contenteditable element
   const newValue = event.target.textContent.trim();
-  console.log('newValue', newValue)
+  // console.log('newValue', newValue)
   // Create a copy of the current data to maintain reactivity
   const newTableData = [...tabData.value];
   const row = newTableData[rowIndex];
@@ -324,7 +325,7 @@ const updateCell = (rowIndex, columnIndex, event) => {
     // Update title row
     row.value[columnIndex].value = newValue; 
   } else {
-    console.log('hello', columnIndex)
+    // console.log('hello', columnIndex)
     // For regular rows, check if we need to update specific cellType properties
     if (columnIndex === 2) { // Notes column
       // If the cell has a link structure
@@ -447,17 +448,32 @@ const addTitleRow = (index) => {
   dropdown.visible = false;
 };
 
-// Function to toggle the options dropdown
 const toggleOptions = (rowIndex, event) => {
   event.stopPropagation();
-  const rect = event.target.getBoundingClientRect();
-  if (dropdown.visible && dropdown.tabIndex === rowIndex) {
+  const buttonRect = event.target.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const dropdownHeight = 187;  
+  const verticalOffset = 4;
+
+  if (dropdown.visible && dropdown.rowIndex === rowIndex) {
     dropdown.visible = false;
   } else {
-    dropdown.visible = !dropdown.visible || dropdown.rowIndex !== rowIndex;
+    dropdown.visible = true;
     dropdown.rowIndex = rowIndex;
-    dropdown.top = rect.bottom + 4;
-    dropdown.left = rect.left - 120; 
+
+    let idealTop = buttonRect.bottom + verticalOffset;
+    const idealLeft = buttonRect.left - 120; // Keep your existing left calculation
+
+    // Adjust vertical position if it overflows the bottom edge
+    if (idealTop + dropdownHeight > viewportHeight) {
+      idealTop = buttonRect.top - dropdownHeight - verticalOffset;
+      if (idealTop < 0) {
+        idealTop = verticalOffset; // Fallback to top if still overflowing
+      }
+    }
+
+    dropdown.left = idealLeft;
+    dropdown.top = idealTop;
   }
 };
 
@@ -588,15 +604,13 @@ const saveLinkToNotes = (linkData) => {
     if (notesColumnIndex !== -1) {
       const newTableData = [...tabData.value];  
       if (newTableData[rowIndex].value.length){
-        const notesColumn = newTableData[rowIndex].value[2];
-        console.log('typeof', typeof notesColumn.value) 
+        const notesColumn = newTableData[rowIndex].value[2]; 
         if (typeof notesColumn.value === 'string' && notesColumn.value.trim().length === 0){
           notesColumn.value = {};
           notesColumn.value.text = ""; 
-          notesColumn.value.links = [linkObject]; 
-          console.log('notesColumn', notesColumn.value) 
+          notesColumn.value.links = [linkObject];  
         } else if (typeof notesColumn.value === "object" && (typeof notesColumn.value.links === "object" || typeof notesColumn.value.links === "array") ){ 
-          console.log('links typeof', typeof notesColumn.value.links) 
+       
           notesColumn.value.links.push(linkObject); 
         } 
         
@@ -617,8 +631,21 @@ const changeViewMode = (type) =>{
 // Initialize with default data if empty
 onMounted(() => {
   document.addEventListener('click', handleClickOutside);
-  window.addEventListener('resize', handleResize);
+  window.addEventListener('resize', handleResize); 
+  if (gridBody.value) {
+    gridBody.value.addEventListener('scroll', handleScroll);
+  }
 });
+
+onUnmounted(() => {
+  if (gridBody.value) {
+    gridBody.value.removeEventListener('scroll', handleScroll);
+  }
+});
+
+const handleScroll = () => { 
+  dropdown.visible = false;
+};
 </script>
 
 <style scoped>

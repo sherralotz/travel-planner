@@ -4,8 +4,8 @@
       <h2
         v-if="!isEditingTitle"
         @click="startEditingTitle"
-        class="text-xl font-semibold cursor-text truncate "
-        :class="{'text-gray-400': !title}"
+        class="text-xl cursor-text truncate "
+        :class="{'text-gray-300': !title}"
       >
         {{ title || 'Title' }}
       </h2>

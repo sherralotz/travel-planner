@@ -36,7 +36,7 @@
       </div>
     </div>
 
-    <div class="overflow-auto h-[calc(100dvh-230px)]">
+    <div class="overflow-auto h-[calc(100dvh-230px)]" ref="noteBody">
       <div v-if="notes.length === 0"  >
       <div class="text-center py-16 px-4 bg-gray-50 rounded-xl border border-dashed border-gray-300"
     > 
@@ -44,31 +44,17 @@
     </div>
     </div>
 
-      <div class="notes-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-3" ref="notesGrid">
+      <div class="notes-grid grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-3 gap-3" ref="notesGrid"> 
         <div v-for="(note, index) in sortedNotes" :key="note.id"
-          class="note-card border border-t-red-400 border-t-3 border-l-gray-100 border-r-gray-100 border-b-gray-100 overflow-hidden px-3 py-3 bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
+                class="note-card overflow-hidden px-3 py-3 bg-white rounded-md shadow-md hover:shadow-lg transition-shadow duration-200"
           @click="openEditModal(note)">
+         
           <div class="note-menu-container relative w-full">
             <button class="note-menu-button absolute top-2 right-2 text-gray-500 hover:text-gray-700 focus:outline-none p-2"
-              @click.stop="toggleMenu(note.id)">
+              @click.stop="toggleMenu(note, $event)">
               <FontAwesomeIcon :icon="faEllipsisVertical" />
             </button>
-            <div v-if="openMenuId === note.id"
-              class="note-menu absolute top-8 right-0 bg-white rounded-md shadow-lg border border-gray-200 w-32 z-10"
-              @click.stop>
-              <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
-                @click="duplicateNote(note); toggleMenu(null)">
-                Duplicate
-              </button>
-              <button class="note-menu-item block px-4 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
-                @click="deleteNote(note.key); toggleMenu(null)">
-                Delete
-              </button>
-              <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
-                @click="convertToChecklist(note); toggleMenu(null)">
-                Checklist
-              </button>
-            </div>
+      
           </div>
           <h3 class="text-xl font-semibold text-gray-800 mb-2 w-[80%] break-words ">
             {{ note.title }}
@@ -91,6 +77,30 @@
         </div>
       </div>
     </div> 
+ <!-- Detached Dropdown -->
+    <div v-if="dropdown.visible" :style="{
+        position: 'fixed',
+        top: dropdown.top + 'px',
+        left: dropdown.left + 'px',
+        zIndex: 1000
+      }"
+      class="dropdown-container w-32 rounded-md shadow-lg bg-white ring-1 ring-gray-300 ring-opacity-5 focus:outline-none py-1 text-[11px]"
+      role="menu" aria-orientation="vertical">
+        <!-- <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
+                @click="duplicateNote(dropdown.noteId); ">
+                Duplicate
+              </button> -->
+              <button class="note-menu-item block px-4 py-2 text-red-500 hover:bg-gray-100 w-full text-left"
+                @click="deleteNote(dropdown.noteKey); ">
+                Delete
+              </button>
+              <!-- <button class="note-menu-item block px-4 py-2 text-gray-800 hover:bg-gray-100 w-full text-left"
+                @click="convertToChecklist(dropdown.noteKey);">
+                Checklist
+              </button> -->
+    </div>
+
+
     <Modal v-model="showModal" v-if="activeNote">
       <input v-if="!activeNote?.isChecklist" v-model="activeNote.title"
         type="text"
@@ -116,7 +126,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch, defineProps, computed, inject } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, nextTick, watch, defineProps, computed, inject } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
 import Checklist from '../variants/Checklist.vue';
 import Modal from '../common/Modal.vue';
@@ -154,12 +164,20 @@ const userId = currentUser.value.uid;
 const travelPlanId = ref(props.travelPlanId || '');
 const tabKey = ref(props.tabKey || '');
 const isLoaded = ref(false);
+const noteBody = ref(null);
 
 // Modal State
 const showModal = ref(false);
 const activeNote = ref(null);
 
 const notesGrid = ref(null);
+const dropdown = reactive({
+  visible: false,
+  top: 0,
+  left: 0, 
+  noteId: '',
+  noteKey: ''
+});
 
 const sortedNotes = computed(() => {
   return [...notes.value].sort((a, b) => {
@@ -186,8 +204,23 @@ onMounted(() => {
         },
       });
     }
+
+    if (noteBody.value) {
+      noteBody.value.addEventListener('scroll', handleScroll);
+    }
   });
+  document.addEventListener('click', handleClickOutside); 
 });
+
+onUnmounted(() => {
+  if (noteBody.value) {
+    noteBody.value.removeEventListener('scroll', handleScroll);
+  }
+});
+
+const handleScroll = () => {
+  dropdown.visible = false;
+};
 
 
 function createEmptyNote() {
@@ -240,6 +273,7 @@ async function saveNotes(updatedNote, newNoteKey) {
 function startCreatingNote() {
   isCreatingNote.value = true;
   newNote.value = createEmptyNote();
+  dropdown.visible = false;
 }
 
 const generateUniqueNoteId = () => {
@@ -302,8 +336,59 @@ function updateChecklistTitle(newTitle) {
 }
 
 
-const toggleMenu = (id) => {
-  openMenuId.value = openMenuId.value === id ? null : id;
+const toggleMenu = (note) => {
+  event.stopPropagation(); 
+  const buttonRect = event.target.getBoundingClientRect();
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  const dropdownHeight = 40;  
+  const dropdownWidth = 128; 
+  const verticalOffset = 0;
+
+   if (dropdown.visible && dropdown.noteId === note.key) {
+    dropdown.visible = false;
+  } else { 
+    let idealTop = buttonRect.bottom + verticalOffset;
+    let idealLeft = buttonRect.left;
+
+    dropdown.visible = true;
+    dropdown.noteKey = note.key;
+    dropdown.top = buttonRect.bottom + 4;
+ 
+    // Check if the dropdown will overflow the right edge of the screen
+    if (idealLeft + dropdownWidth > viewportWidth) {
+      // Adjust the left position to make it fit within the viewport
+      idealLeft = viewportWidth - dropdownWidth - 10; // Add a small margin
+    }
+
+    // Ensure the adjusted left position doesn't go off the left edge
+    if (idealLeft < 0) {
+      idealLeft = 10; // Add a small margin from the left
+    }
+
+    dropdown.left = idealLeft;
+ // Adjust vertical position if it overflows the bottom edge
+    if (idealTop + dropdownHeight > viewportHeight) {
+      idealTop = buttonRect.top - dropdownHeight - verticalOffset;
+      if (idealTop < 0) {
+        idealTop = verticalOffset; // Fallback to top if still overflowing
+      }
+    }
+ 
+    dropdown.left = idealLeft;
+    dropdown.top = idealTop;
+  }
+};
+// Close dropdown when clicking outside
+const handleClickOutside = (event) => {
+  // Close the dropdown if clicking outside
+  if (dropdown.visible) {
+    // Check if click is outside the dropdown
+    const dropdownElement = document.querySelector('.dropdown-container');
+    if (dropdownElement && !dropdownElement.contains(event.target)) {
+      dropdown.visible = false; 
+    }
+  }
 };
 
 const deleteNote = async (noteKeyToDelete) => { 
@@ -312,6 +397,7 @@ const deleteNote = async (noteKeyToDelete) => {
   await saveNotes(updatedNotesObject);
   notes.value = notes.value.filter(note => note.key !== noteKeyToDelete);
   updateNotePositions();
+  dropdown.visible = false;
 };
 
 const duplicateNote = async (originalNote) => {
@@ -331,6 +417,7 @@ const duplicateNote = async (originalNote) => {
   await saveNotes(updatedNotesObject);
   notes.value.push({ key: newNoteId, ...newNoteData, position: notes.value.length -1 });
   updateNotePositions();
+  dropdown.visible = false;
 };
 
 const updateNotePositions = () => {
@@ -346,6 +433,7 @@ const updateNotePositions = () => {
 function openEditModal(note) {
   activeNote.value = JSON.parse(JSON.stringify(note)); // deep copy
   showModal.value = true;
+  dropdown.visible = false;
 }
 
 // Save edits
@@ -360,6 +448,7 @@ async function saveEditedNote() {
     closeModal();
     editingNoteId.value = null;
   }
+  dropdown.visible = false;
 }
 
 // Close modal

@@ -1,8 +1,6 @@
 <template>
-  <div>
-
-    <div v-if="loading">Loading plan details...</div>
-    <div v-else-if="error">{{ error }}</div>
+  <div>  
+    <div v-if="error">{{ error }}</div>
     <div v-else-if="travelPlan">
       <div class="flex">
         <div class="flex w-full">
@@ -54,7 +52,7 @@
 
       <div class="flex flex-col w-full relative">
         <div class="flex border-b border-gray-200 bg-gray-50 relative ">
-          <div class="flex items-center overflow-x-auto flex-grow">
+          <div class="flex items-center overflow-x-auto flex-grow"  ref="tabBody">
             <div v-for="(tab, index) in tabs" :key="index" class="flex items-center whitespace-nowrap relative">
 
               <div :class="[
@@ -118,10 +116,10 @@
             @click.stop="startEditingTab(dropdown.tabIndex)">
             Rename
           </button>
-          <!-- <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
+          <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
             @click.stop="duplicateTab(dropdown.tabIndex)">
             Duplicate
-          </button> -->
+          </button>
 
           <div class="relative">
             <button class="block w-full text-left px-4 py-1 text-sm text-gray-700 hover:bg-gray-100"
@@ -193,6 +191,16 @@ const editingTabName = ref('');
 const editingTabKey = ref('');
 const editTabInputs = ref([]); // Array to hold input refs
 const showVariantSubMenu = ref(false);
+const tabBody = ref(null);
+const localStorageKey = 'activeTabIndex';
+
+const dropdown = reactive({
+  visible: false,
+  top: 0,
+  left: 0,
+  tabIndex: null 
+});
+ 
 const {
   data,
   updateData,
@@ -202,13 +210,7 @@ const {
   unsubscribe
 } = useDataUpdater({ userId, travelPlanId });
 
-const dropdown = reactive({
-  visible: false,
-  top: 0,
-  left: 0,
-  tabIndex: null
-});
- 
+
 // Define your default table headers
 const defaultTableHeaders = ref([
   { value: 'Date', type: 'date', position: 1 },
@@ -240,10 +242,8 @@ const defaultTableData = ref([
 const tabs = computed(() => { 
 
   if (travelPlan.value && travelPlan.value.tabs) {  
-    const tabsArray = Object.entries(travelPlan.value.tabs); 
-    // Sort the array based on the tabPosition in the value
-    tabsArray.sort(([, a], [, b]) => a.tabPosition - b.tabPosition); 
-    // Now, map this array to an array of objects, where each object has the key and the value
+    const tabsArray = Object.entries(travelPlan.value.tabs);  
+    tabsArray.sort(([, a], [, b]) => a.tabPosition - b.tabPosition);  
     const tabsParsedWithKey =  tabsArray.map(([key, value]) => ({ key, ...value })); 
     return tabsParsedWithKey;
   }
@@ -262,15 +262,14 @@ onMounted(async () => {
       loading.value = false;
       return;
     }
- 
-    // console.log(`user: ${userId}`)
+  loadActiveTab(); 
     const docRef = doc(db, `users/${userId}/travelPlans`, travelPlanId.value);
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-    console.log('docSnap.data():', JSON.parse(JSON.stringify(docSnap.data())))
+    //console.log('docSnap.data():', JSON.parse(JSON.stringify(docSnap.data())))
      travelPlan.value = { id: docSnap.id, ...docSnap.data() };
-    console.log('PLAN:', JSON.parse(JSON.stringify(travelPlan.value)))
+    //console.log('PLAN:', JSON.parse(JSON.stringify(travelPlan.value)))
     } else {
       error.value = 'Travel plan not found.';
     }
@@ -280,16 +279,23 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-
-  // Add event listeners for clicks outside and window resize
+  await nextTick(); 
   document.addEventListener('click', handleClickOutside);
   window.addEventListener('resize', handleResize);
+  if (tabBody.value) {
+    tabBody.value.addEventListener('scroll', handleScroll); 
+  } 
+});
 
-  // Detect if using a touch device
-  if ('ontouchstart' in window) {
-    isTouch.value = true;
+onUnmounted(() => {
+  if (tabBody.value) {
+    tabBody.value.removeEventListener('scroll', handleScroll);
   }
 });
+
+const handleScroll = () => { 
+  dropdown.visible = false;
+};
 
 // Close dropdown when clicking outside
 const handleClickOutside = (event) => {
@@ -331,9 +337,7 @@ const startEditingTitle = () => {
  
 
   nextTick(() => {
-    if (titleText.value) { // Now titleText.value will be the DOM element
-      
-      console.log('title', travelPlan.value.title) 
+    if (titleText.value) { // Now titleText.value will be the DOM element 
       titleText.value.value = travelPlan.value.title; // Set the input's value
       titleText.value.focus();
     }
@@ -359,9 +363,17 @@ const cancelEditingTitle = () => {
 // Set active tab
 const setActiveTab = (index) => {
   activeTabIndex.value = index;
+  localStorage.setItem(localStorageKey, index.toString());
   // Close dropdown when changing tabs
   dropdown.visible = false;
   showVariantSubMenu.value = false;
+};
+
+const loadActiveTab = () => {
+  const savedIndex = localStorage.getItem(localStorageKey);
+  if (savedIndex) {
+    activeTabIndex.value = parseInt(savedIndex, 10);
+  }
 };
 
 const saveTabName = () => {
@@ -386,7 +398,9 @@ const cancelEditingTab = () => {
 const toggleTabMenu = (index, event) => {
   // Stop event propagation to prevent immediate closing
   event.stopPropagation();
-  const rect = event.target.getBoundingClientRect();
+  const buttonRect = event.target.getBoundingClientRect();
+  const viewportWidth = window.innerWidth;
+  const dropdownWidth = 150; // Estimate the width of your dropdown menu
 
   // If clicking on the same tab menu button that's already open, close it
   if (dropdown.visible && dropdown.tabIndex === index) {
@@ -395,12 +409,26 @@ const toggleTabMenu = (index, event) => {
     // Otherwise, open this tab's menu
     dropdown.visible = true;
     dropdown.tabIndex = index;
-    dropdown.top = rect.bottom + 4;
-    dropdown.left = rect.left;
+    dropdown.top = buttonRect.bottom + 4;
+
+    // Calculate the ideal left position
+    let idealLeft = buttonRect.left;
+
+    // Check if the dropdown will overflow the right edge of the screen
+    if (idealLeft + dropdownWidth > viewportWidth) {
+      // Adjust the left position to make it fit within the viewport
+      idealLeft = viewportWidth - dropdownWidth - 10; // Add a small margin
+    }
+
+    // Ensure the adjusted left position doesn't go off the left edge
+    if (idealLeft < 0) {
+      idealLeft = 10; // Add a small margin from the left
+    }
+
+    dropdown.left = idealLeft;
     showVariantSubMenu.value = false; // Close variant submenu when opening main menu
   }
 };
-
 // Start editing tab name
 const startEditingTab = (index) => {
   if (index !== null) {
@@ -432,7 +460,7 @@ const generateUniqueTabKey = (type) => {
   // consolee.log('travelPlan', )
 
   // }
-  console.log('key', existingKeys) 
+  // console.log('key', existingKeys) 
   let newTabKey;
   let counter = 1;
 
@@ -491,7 +519,6 @@ const addNewTab = (type = 'table') => {
   console.log('tab:', JSON.parse(JSON.stringify({dataPath: `tabs.${newTabKey}`, updatedData: newTabContent})))
 
   handleUpdatePlanItem({dataPath: `tabs.${newTabKey}`, updatedData: newTabContent})
-
 };
 
 const setTabVariant = (variant, index) => {
@@ -510,8 +537,7 @@ const setTabVariant = (variant, index) => {
         tab.value = {};
         tab.value.tableData = defaultTableData.value.map(item => ({ ...item }));
         tab.value.headers = [...defaultTableHeaders.value];
-      }  
-      console.log('tab', tab)
+      }   
       handleUpdatePlanItem({dataPath: `tabs.${tabs.value[index].key}`, updatedData: tab}) 
     }
   } catch (error) {
@@ -519,6 +545,38 @@ const setTabVariant = (variant, index) => {
   }
 };
  
+// Duplicate a tab  
+const duplicateTab = (tabKeyToDuplicate) => {
+  const tabToDuplicate = tabs.value[tabKeyToDuplicate];
+
+  if (!tabToDuplicate) {
+    console.error(`Tab with key "${tabKeyToDuplicate}" not found.`);
+    return;
+  }
+
+  const newTabType = tabToDuplicate.type;
+  const newTabPosition = Object.values(tabs.value).reduce((maxPosition, tab) => {
+    return Math.max(maxPosition, tab.tabPosition || 0);
+  }, 0) + 1;
+  const newTabKey = generateUniqueTabKey(newTabType);
+  const duplicatedValue = JSON.parse(JSON.stringify(tabToDuplicate.value)); // Deep copy to avoid modifying the original
+  let newTitle = `${tabToDuplicate.title} Copy`;
+  let newTabId = newTabPosition; // Using position as a simple initial ID for the duplicate
+
+  const newTabContent = {
+    tabPosition: newTabPosition,
+    type: newTabType,
+    title: newTitle,
+    tabId: newTabId,
+    value: duplicatedValue,
+  };
+
+  travelPlan.value.tabs[newTabKey] = newTabContent;
+  // console.log('duplicated tab:', JSON.parse(JSON.stringify({ dataPath: `tabs.${newTabKey}`, updatedData: newTabContent })));
+ 
+  setActiveTab(tabs.value.length - 1); 
+  handleUpdatePlanItem({ dataPath: `tabs.${newTabKey}`, updatedData: newTabContent });
+};
 
 // Delete a tab
 const deleteTab = (index) => {
@@ -542,6 +600,7 @@ const deleteTab = (index) => {
     dropdown.visible = false; // Close dropdown after deleting 
   // console.log( 'aaa', JSON.parse(JSON.stringify({dataPath: `tabs`, updatedData: newTabs})))
   handleUpdatePlanItem({dataPath: `tabs`, updatedData: newTabs});
+  setActiveTab(index - 1); 
   // }
 };
  
